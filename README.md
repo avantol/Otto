@@ -1,4 +1,4 @@
 # WSJTX-Controller-v2
 <br>Assistant for WSJT-X
-<br>(See Controller v2 for required [modified] WSJT-X installer)
+<br>Modfified WSJT-X is required, see installer releases at https://github.com/avantol/WSJTX-Controller-v2
 <br>More details at https://www.qrz.com/db/WM8Q
