@@ -793,7 +793,7 @@ namespace WSJTX_Controller
                     CheckNextXmit();
                 }
             }
-            else        //call CQ  tempOnly
+            else        //call CQ
             {
                 ctrl.holdCheckBox.Enabled = false;
                 ctrl.holdCheckBox.Checked = false;
@@ -805,7 +805,12 @@ namespace WSJTX_Controller
                     txTimeout = true;       //start CQing immediately
                     DebugOutput($"{spacer}txTimeout:{txTimeout}");
                 }
-                
+
+                if (callInProg != null && !txEnabled)       //finish call in progress
+                {
+                    EnableTx();       //start replying immediately
+                }
+
                 CheckNextXmit();
             }
 
@@ -1386,10 +1391,10 @@ namespace WSJTX_Controller
                     {
                         if (!(transmitting && txMsg == "TUNE"))         //don't interrupt tuning
                         {
-                            DisableTx(false);
+                            DisableTx(false);               //this syncs txEnable state with WSJT-X
                             HaltTx();
                         }
-                        EnableMonitoring();               //must do only after DisableTx and HaltTx
+                        EnableMonitoring();                 //must do only after DisableTx and HaltTx
                         EnableDebugLog();
 
                         opMode = OpModes.START;
@@ -1462,6 +1467,7 @@ namespace WSJTX_Controller
                         {
                             DebugOutput($"\n{Time()} WSJT-X event, TxHaltClk, paused:{paused} txMode:{txMode} processDecodeTimer.Enabled:{processDecodeTimer.Enabled}");
                             Pause(false);       //WSJT-X already halted Tx
+                            txEnabled = false;
                         }
                     }
 
@@ -1496,7 +1502,7 @@ namespace WSJTX_Controller
                     //check for changed WSJT-X Tx enabled
                     if (lastTxEnabled != txEnabledConf)
                     {
-                        txEnabled = txEnabledConf;          //txEnabled confirmed (is synchronous with WSJT-X "Enable TX" and "Halt Tx" button(s) clicked)
+                        //txEnabled = txEnabledConf;          //txEnabled confirmed (is synchronous with WSJT-X "Enable TX" and "Halt Tx" button(s) clicked)
                         DebugOutput($"\n{Time()} WSJT-X event, Tx enable change confirmed, txEnabled:{txEnabled} (was {lastTxEnabled}) paused:{paused} txMode:{txMode}");
                         lastTxEnabled = txEnabledConf;
                     }
@@ -1983,8 +1989,8 @@ namespace WSJTX_Controller
                 return;
             }
 
-            //check for time to initiate next xmit from queued callst
-            if (txTimeout || (callQueue.Count > 0 && (qsoState == WsjtxMessage.QsoStates.CALLING || callInProg == null)))        //important to sync qso logged to end of xmit, and manually-added call(s) to status msgs
+            //check for time to initiate next xmit from queued calls
+            if (txTimeout || (callQueue.Count > 0 && (txMode == TxModes.CALL_CQ || callInProg == null)))        //important to sync qso logged to end of xmit, and manually-added call(s) to status msgs
             {
                 consecTxCount = 0;
                 replyCmd = null;        //last reply cmd sent is no longer in effect
@@ -2266,23 +2272,28 @@ namespace WSJTX_Controller
 
             if (toCall == null)
             {
-                if (txMsg == "TUNE" && ctrl.offsetTune)
+                if (txMsg == "TUNE")
                 {
-                    DebugOutput($"{spacer}tuning end");
-                    emsg.NewTxMsgIdx = 10;
-                    emsg.GenMsg = $"";          //no effect
-                    emsg.SkipGrid = ctrl.skipGridCheckBox.Checked;
-                    emsg.UseRR73 = ctrl.useRR73CheckBox.Checked;
-                    emsg.CmdCheck = "";         //ignored
-                    emsg.Offset = CurAudioOffset();
-                    ba = emsg.GetBytes();
-                    udpClient2.Send(ba, ba.Length);
-                    DebugOutput($"{Time()} >>>>>Sent 'Opt Req' cmd:10\n{emsg}");
-                    if (settingChanged)
+                    if (ctrl.offsetTune)
                     {
-                        ctrl.WsjtxSettingConfirmed();
-                        settingChanged = false;
+                        DebugOutput($"{spacer}tuning end");
+                        emsg.NewTxMsgIdx = 10;
+                        emsg.GenMsg = $"";          //no effect
+                        emsg.SkipGrid = ctrl.skipGridCheckBox.Checked;
+                        emsg.UseRR73 = ctrl.useRR73CheckBox.Checked;
+                        emsg.CmdCheck = "";         //ignored
+                        emsg.Offset = CurAudioOffset();
+                        ba = emsg.GetBytes();
+                        udpClient2.Send(ba, ba.Length);
+                        DebugOutput($"{Time()} >>>>>Sent 'Opt Req' cmd:10\n{emsg}");
+                        if (settingChanged)
+                        {
+                            ctrl.WsjtxSettingConfirmed();
+                            settingChanged = false;
+                        }
                     }
+                    DisableTx(false);           //if done at opMode goes to START, this syncs txEnable state with WSJT-X
+                    HaltTx();
                 }
                 return;
             }
@@ -4510,6 +4521,7 @@ namespace WSJTX_Controller
                 ba = emsg.GetBytes();
                 udpClient2.Send(ba, ba.Length);
                 DebugOutput($"{Time()} >>>>>Sent 'HaltTx' cmd:12\n{emsg}");
+                txEnabled = false;
             }
         }
 
