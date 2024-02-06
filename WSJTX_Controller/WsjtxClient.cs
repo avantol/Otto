@@ -42,7 +42,7 @@ namespace WSJTX_Controller
         public int offsetHiLimit = 2800;
         public bool useRR73 = false;                //applies to non-FT4 modes
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/165" };
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/166", "2.7.0/167", "2.7.0/168", "2.7.0/169" };
         private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevCqs = 2;
@@ -124,7 +124,7 @@ namespace WSJTX_Controller
         private Dictionary<string, List<string>> potaLogDict = new Dictionary<string, List<string>>();      //calls logged for any mode/band for this day: "call: date,band,mode"
 
         private AsyncCallback asyncCallback;
-        private UdpState s;
+        private UdpState udpSt;
         private static bool messageRecd;
         private static byte[] datagram;
         private static IPEndPoint fromEp = new IPEndPoint(IPAddress.Any, 0);
@@ -192,6 +192,9 @@ namespace WSJTX_Controller
 
         public TxModes txMode;
         private TxModes lastTxMode;
+
+        private string opState = "";
+        private string lastOpState = "";
 
         private struct UdpState
         {
@@ -406,7 +409,7 @@ namespace WSJTX_Controller
             if (!recvStarted)
             {
                 if (udpClient == null || WsjtxMessage.NegoState == WsjtxMessage.NegoStates.WAIT) return;
-                udpClient.BeginReceive(asyncCallback, s);
+                udpClient.BeginReceive(asyncCallback, udpSt);
                 recvStarted = true;
             }
         }
@@ -472,9 +475,9 @@ namespace WSJTX_Controller
                     return;
                 }
 
-                s = new UdpState();
-                s.e = endPoint;
-                s.u = udpClient;
+                udpSt = new UdpState();
+                udpSt.e = endPoint;
+                udpSt.u = udpClient;
                 asyncCallback = new AsyncCallback(ReceiveCallback);
 
                 WsjtxMessage.NegoState = WsjtxMessage.NegoStates.INITIAL;
@@ -733,6 +736,7 @@ namespace WSJTX_Controller
 
         private void TxModeEnabled()        //WSJT-X "Enable Tx" button checked
         {
+            //marker1
             DebugOutput($"\n{Time()} TxModeEnabled, txMode:{txMode} paused:{paused} txEnabled:{txEnabled}");
             DateTime dtNow = DateTime.UtcNow;     //helps with debugging to set this here
             bool prevTxEnabled = txEnabled;
@@ -770,45 +774,26 @@ namespace WSJTX_Controller
                     ctrl.holdCheckBox.Enabled = false;
                     ctrl.holdCheckBox.Checked = false;
                 }
-
-                if ((callInProg == null && callQueue.Count == 0) || (callInProg != null && tCall == callInProg))   //no call in progress/queued, or call just timed out so don't continue this call
-                {
-                    txTimeout = true;       //chcek for start replying immediately
-                    DebugOutput($"{spacer}txTimeout:{txTimeout}");
-                }
-
-                if (callInProg != null)
-                {
-                    if (replyDecode != null)
-                    {
-                        bool evenCall = IsEvenPeriod((replyDecode.SinceMidnight.Minutes * 60) + replyDecode.SinceMidnight.Seconds);
-                        if (evenCall != IsEvenPeriod((dtNow.Minute * 60) + dtNow.Second))
-                        {
-                            EnableTx();        //start tx immediately to continue with current call
-                        }
-                    }
-                }
-                else
-                {
-                    CheckNextXmit();
-                }
             }
-            else        //call CQ
+            else        //CQ mode
             {
                 ctrl.holdCheckBox.Enabled = false;
                 ctrl.holdCheckBox.Checked = false;
 
                 CheckCallQueuePeriod(txFirst);        //remove queued calls from wrong time period
+            }
 
-                if ((callInProg == null && callQueue.Count == 0) || (callInProg != null && tCall == callInProg))  //no call in progress/queued, or call just timed out so don't continue this call
+            if (callInProg != null)       //finish call in progress
+            {
+                EnableTx();       //start replying immediately
+            }
+            else
+            {
+                if ((callInProg == null && callQueue.Count == 0) || (callInProg != null && callInProg == tCall))  //no call in progress/queued, or call just timed out so don't continue this call
                 {
                     txTimeout = true;       //start CQing immediately
-                    DebugOutput($"{spacer}txTimeout:{txTimeout}");
-                }
-
-                if (callInProg != null && !txEnabled)       //finish call in progress
-                {
-                    EnableTx();       //start replying immediately
+                    DebugOutput($"{spacer}txTimeout:{txTimeout} tCall:{tCall}");
+                    if (callInProg != null && callInProg == tCall) LogBeep();
                 }
 
                 CheckNextXmit();
@@ -825,6 +810,7 @@ namespace WSJTX_Controller
 
         public void TxModeChanged(TxModes newMode)
         {
+            //marker1
             TxModes prevTxMode = txMode;
             txMode = newMode;
             DebugOutput($"\n{Time()} TxModeChanged, txMode:{txMode} paused:{paused} txEnabled:{txEnabled}");
@@ -834,7 +820,8 @@ namespace WSJTX_Controller
             if (callInProg != null && callInProg == tCall)        //just timed out so don't continue this call
             {
                 txTimeout = true;
-                DebugOutput($"{spacer}{tCall} timed out, txTimeout:{txTimeout} callInProg:{callInProg}");
+                DebugOutput($"{spacer}{tCall} timed out, txTimeout:{txTimeout} callInProg:{callInProg} tCall:{tCall}");
+                LogBeep();
             }
 
             if (wsjtxTxEnableButton)
@@ -1472,8 +1459,9 @@ namespace WSJTX_Controller
                     }
 
                     //check for WSJT-X Tx enable button state changed
-                    if (smsg.TxEnableClk)           //WSJT-X "Tx Enable" button clicked, and button state updated
+                    if (smsg.TxEnableClk)           //WSJT-X "Tx Enable" button clicked, and button state updated by WSJT-X
                     {
+                        //marker1
                         if (opMode >= OpModes.START)
                         {
                             DebugOutput($"\n{Time()} WSJT-X event, wsjtxTxEnableButton:{wsjtxTxEnableButton}, txEnabled:{txEnabled} paused:{paused} txMode:{txMode} processDecodeTimer.Enabled:{processDecodeTimer.Enabled}");
@@ -1502,7 +1490,6 @@ namespace WSJTX_Controller
                     //check for changed WSJT-X Tx enabled
                     if (lastTxEnabled != txEnabledConf)
                     {
-                        //txEnabled = txEnabledConf;          //txEnabled confirmed (is synchronous with WSJT-X "Enable TX" and "Halt Tx" button(s) clicked)
                         DebugOutput($"\n{Time()} WSJT-X event, Tx enable change confirmed, txEnabled:{txEnabled} (was {lastTxEnabled}) paused:{paused} txMode:{txMode}");
                         lastTxEnabled = txEnabledConf;
                     }
@@ -1968,10 +1955,10 @@ namespace WSJTX_Controller
                 EnableTx();
                 DebugOutput($"{spacer}CheckNextXmit(5) end, autoFreqPauseMode:{autoFreqPauseMode}");
             }
-
-            //******************
-            //Timeout processing
-            //******************
+            
+            //*************
+            //Timed tx stop
+            //**************
             if (txTimeout && ctrl.timedCheckBox.Checked && (DateTime.Now >= txStopDateTime))          //local time
             {
                 DebugOutput($"{spacer}CheckNextXmit(3) start");
@@ -1989,8 +1976,13 @@ namespace WSJTX_Controller
                 return;
             }
 
-            //check for time to initiate next xmit from queued calls
-            if (txTimeout || (callQueue.Count > 0 && (txMode == TxModes.CALL_CQ || callInProg == null)))        //important to sync qso logged to end of xmit, and manually-added call(s) to status msgs
+            //********************
+            //Next call processing
+            //********************
+            //check for time to initiate next xmit from queued calls,
+            //or resume CQing mode,
+            //or disable tx for listen mode
+            if (txTimeout || (callQueue.Count > 0 && callInProg == null))        //important to sync qso logged to end of xmit, and manually-added call(s) to status msgs
             {
                 consecTxCount = 0;
                 replyCmd = null;        //last reply cmd sent is no longer in effect
@@ -2198,16 +2190,23 @@ namespace WSJTX_Controller
             //check for call in progress in listen mode with tx disabled
             if (!paused && !txEnabled && callInProg != null)
             {
+                DebugOutput($"{spacer}call in progress in listen mode with tx disabled");
                 EnableTx();
+                LogBeep();
             }
 
             //check for auto freq update disabled while CQ mode previously in progress
             if (!paused && !txEnabled && txMode == TxModes.CALL_CQ && autoFreqPauseMode == autoFreqPauseModes.DISABLED)
             {
+                DebugOutput($"{spacer}auto freq update disabled while CQ mode previously in progress");
                 EnableTx();
+                LogBeep();
             }
 
-            //check for Tx started manually during Rx, or auto freq update enabled / in progress
+            //check for processing next call in queue, 
+            //or resume tx in CQ mode, or disable tx for listen mode,
+            //or process auto freq update enabled / in progress
+            //or check for Tx started manually during Rx
             if (!paused && (txEnabled || txMode == TxModes.LISTEN || autoFreqPauseMode != autoFreqPauseModes.DISABLED))
             {
                 DebugOutput($"{spacer}paused:{paused} txEnabled:{txEnabled} txMode:{txMode} autoFreqPauseMode:{autoFreqPauseMode}");
@@ -2718,7 +2717,6 @@ namespace WSJTX_Controller
 
                 if (callDict.Count != callQueue.Count)
                 {
-                    //Console.Beep();
                     DebugOutput("ERROR: queueDict and callDict out of sync");
                     UpdateDebug();
                     return false;
@@ -2805,7 +2803,6 @@ namespace WSJTX_Controller
 
             if (!callDict.TryGetValue(call, out dmsg))
             {
-                //Console.Beep();
                 DebugOutput("ERROR: '{call}' not found");
                 UpdateDebug();
                 return null;
@@ -2832,7 +2829,6 @@ namespace WSJTX_Controller
 
             if (!callDict.TryGetValue(call, out dmsg))
             {
-                //Console.Beep();
                 DebugOutput("ERROR: '{call}' not found");
                 UpdateDebug();
                 return null;
@@ -2842,7 +2838,6 @@ namespace WSJTX_Controller
 
             if (callDict.Count != callQueue.Count)
             {
-                //Console.Beep();
                 DebugOutput("ERROR: callDict and queueDict out of sync");
                 UpdateDebug();
                 return null;
@@ -3553,7 +3548,15 @@ namespace WSJTX_Controller
 
             try
             {
-                ctrl.label5.Text = $"";
+                /*
+                if (*** != last***)
+                {
+                    ctrl.label5.ForeColor = Color.Red;
+                    chg = true;
+                }
+                ctrl.label5.Text = ***;
+                last*** = ***;
+                */
 
                 ctrl.label6.Text = $"{msg.GetType().Name.Substring(0, 6)}";
                 ctrl.label7.Text = $"txEn: {txEnabled.ToString().Substring(0, 1)}";
@@ -4583,6 +4586,7 @@ namespace WSJTX_Controller
 
         private void ProcessDblClick(string call, bool isNewCountryOnBand, bool isNewCountry)
         {
+            //marker1
             //manual operation started
             DebugOutput($"{Time()} ProcessDblClick, call:{call} isNewCountryOnBand:{isNewCountryOnBand}isNewCountry:{isNewCountry}");
 
@@ -4613,14 +4617,14 @@ namespace WSJTX_Controller
             replyDecode.DeltaTime = 0.0;       //not used
             replyDecode.DeltaFrequency = (int)defaultAudioOffset; //real offset unknown
             replyDecode.Message = replyCmd; //fake a new reply cmd
-            replyDecode.SinceMidnight = latestDecodeTime + new TimeSpan(0, 0, 0, 0, (int)trPeriod);
+            replyDecode.SinceMidnight = latestDecodeTime + new TimeSpan(0, 0, 0, 0, (int)trPeriod);     //dummy value, NOT ACCURATE
             replyDecode.RxDate = latestDecodeDate;
             replyDecode.Priority = priority;
 
+            if (!txEnabled) EnableTx();         //tx often disabled when in LISTEN mode
             DebugOutput($"{spacer}call:{CallPriorityString(call)} replyDecode:{replyDecode}");
             SetCallInProg(call);
             RemoveCall(call);
-            if (!txEnabled) EnableTx();         //don't know if the actual time period for the call, so enable tx now
             ctrl.ShowMsg("Manual call selection", false);
             UpdateDebug();
 
@@ -5445,6 +5449,13 @@ namespace WSJTX_Controller
             DebugOutput($"{Time()} SetPeriodState, dtNow:{dtNow}");
             period = IsEvenPeriod((dtNow.Minute * 60) + dtNow.Second) ? Periods.EVEN : Periods.ODD;       //determine this period
             DebugOutput($"{spacer}period:{period}");
+        }
+
+        private void LogBeep()
+        {
+            if (!debug) return;
+            Console.Beep();
+            DebugOutput($"{spacer}BEEP");
         }
     }
 }
