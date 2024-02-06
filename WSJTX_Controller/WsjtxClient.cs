@@ -2315,16 +2315,23 @@ namespace WSJTX_Controller
             }
             else
             {
-                //check for max Tx count during Tx hold 
-                if (ctrl.freqCheckBox.Checked && autoFreqPauseMode == autoFreqPauseModes.DISABLED && txMode == TxModes.LISTEN && ctrl.holdCheckBox.Checked)
+                //check for max Tx count during Tx hold                                            tempOnly
+                if (ctrl.freqCheckBox.Checked && autoFreqPauseMode == autoFreqPauseModes.DISABLED /*&& txMode == TxModes.LISTEN*/ && ctrl.holdCheckBox.Checked)
                 {
                     consecTxCount++;
                     if (consecTxCount >= maxConsecTxCount)
                     {
-                        DisableTx(true);
-                        autoFreqPauseMode = autoFreqPauseModes.ENABLED;
-                        UpdateCallInProg();
-                        DebugOutput($"{spacer}auto freq update started (Tx hold)");
+                        if (autoFreqPauseMode == autoFreqPauseModes.DISABLED)
+                        {
+                            DisableTx(true);
+                            autoFreqPauseMode = autoFreqPauseModes.ENABLED;
+                            UpdateCallInProg();
+                            DebugOutput($"{spacer}auto freq update started (Tx hold)");
+                        }
+                        else
+                        {
+                            consecTxCount = 0;
+                        }
                     }
                 }
                 else
@@ -2351,10 +2358,17 @@ namespace WSJTX_Controller
                     {
                         if (++consecCqCount >= maxConsecCqCount)
                         {
-                            DisableTx(true);
-                            autoFreqPauseMode = autoFreqPauseModes.ENABLED;
-                            UpdateCallInProg();
-                            DebugOutput($"{spacer}auto freq update started (CQs)");
+                            if (autoFreqPauseMode == autoFreqPauseModes.DISABLED)
+                            {
+                                DisableTx(true);
+                                autoFreqPauseMode = autoFreqPauseModes.ENABLED;
+                                UpdateCallInProg();
+                                DebugOutput($"{spacer}auto freq update started (CQs)");
+                            }
+                            else
+                            {
+                                consecCqCount = 0;
+                            }
                         }
                     }
                     else
@@ -2484,10 +2498,17 @@ namespace WSJTX_Controller
                         consecTimeoutCount += Math.Max(maxTxRepeat, 2);   //min of 2 in case many stations not hearing calls
                         if (consecTimeoutCount >= maxConsecTimeoutCount)
                         {
-                            DisableTx(true);
-                            autoFreqPauseMode = autoFreqPauseModes.ENABLED;
-                            UpdateCallInProg();
-                            DebugOutput($"{spacer}auto freq update started (no QSOs)");
+                            if (autoFreqPauseMode == autoFreqPauseModes.DISABLED)
+                            {
+                                DisableTx(true);
+                                autoFreqPauseMode = autoFreqPauseModes.ENABLED;
+                                UpdateCallInProg();
+                                DebugOutput($"{spacer}auto freq update started (no QSOs)");
+                            }
+                            else
+                            {
+                                consecTimeoutCount = 0;
+                            }
                         }
                     }
                     else
