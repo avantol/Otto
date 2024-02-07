@@ -42,7 +42,7 @@ namespace WSJTX_Controller
         public int offsetHiLimit = 2800;
         public bool useRR73 = false;                //applies to non-FT4 modes
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/166", "2.7.0/167", "2.7.0/168", "2.7.0/169" };
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/167", "2.7.0/168", "2.7.0/169" };
         private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevCqs = 2;
@@ -104,14 +104,17 @@ namespace WSJTX_Controller
         private int? lastSpecOp = null;
         private string lastTxMsg = null;
         private bool? lastTxEnabled = null;
-        private string lastCallInProg = null;
-        private bool? lastTxTimeout = null;
-        private string lastReplyCmd = null;
+        private string lastCallInProgDebug = null;
+        private bool? lastTxTimeoutDebug = null;
+        private string lastReplyCmdDebug = null;
         private WsjtxMessage.QsoStates lastQsoStateDebug = WsjtxMessage.QsoStates.INVALID;
         private string lastDxCallDebug = null;
         private string lastTxMsgDebug = null;
         private string lastLastTxMsgDebug = null;
         private bool? lastWsjtxTxEnableButton = null;
+        private bool lastTransmittingDebug = false;
+        private bool lastRestartQueueDebug = false;
+        private bool lastTxFirstDebug = false;
 
         private string lastDxCall = null;
         private int xmitCycleCount = 0;
@@ -153,9 +156,9 @@ namespace WSJTX_Controller
         string path = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\{Assembly.GetExecutingAssembly().GetName().Name.ToString()}";
         List<int> audioOffsets = new List<int>();
         int oddOffset = 0;
-        int lastOddOffset = 0;
+        int lastOddOffsetDebug = 0;
         int evenOffset = 0;
-        int lastEvenOffset = 0;
+        int lastEvenOffsetDebug = 0;
         const int maxTxTimeHrs = 4;      //hours
         const int maxDecodeAgeMinutes = 30;
         DateTime txStopDateTime = DateTime.MaxValue;
@@ -169,14 +172,14 @@ namespace WSJTX_Controller
         bool txWarningSound = false;
         bool timedStartInProgress = false;
         int consecCqCount = 0;
-        int lastConsecCqCount = 0;
+        int lastConsecCqCountDebug = 0;
         const int maxConsecCqCount = 8;
         int consecTimeoutCount = 0;
         int lastConsecTimeoutCount = 0;
         const int maxConsecTimeoutCount = 7;
         int consecTxCount = 0;
-        int lastConsecTxCount = 0;
-        bool lastPaused = true;
+        int lastConsecTxCountDebug = 0;
+        bool lastPausedDebug = true;
         const int maxConsecTxCount = 12;
         const int noSnrAvail = -30;
         const uint tuningAudioOffset = 3200;
@@ -191,7 +194,7 @@ namespace WSJTX_Controller
         bool txInterrupted = false;
 
         public TxModes txMode;
-        private TxModes lastTxMode;
+        private TxModes lastTxModeDebug;
 
         private string opState = "";
         private string lastOpState = "";
@@ -242,7 +245,7 @@ namespace WSJTX_Controller
             ACTIVE
         }
         private autoFreqPauseModes autoFreqPauseMode;
-        private autoFreqPauseModes lastAutoFreqPauseMode = autoFreqPauseModes.DISABLED;
+        private autoFreqPauseModes lastAutoFreqPauseModeDebug = autoFreqPauseModes.DISABLED;
 
         public WsjtxClient(Controller c, IPAddress reqIpAddress, int reqPort, bool reqMulticast, bool reqOverrideUdpDetect, bool reqDebug, bool reqLog)
         {
@@ -911,6 +914,7 @@ namespace WSJTX_Controller
         {
             if (haltTx) HaltTx();
             paused = true;
+            txEnabled = false;
             ctrl.holdCheckBox.Enabled = false;
             ctrl.holdCheckBox.Checked = false;
             DebugOutput($"{Time()} Pause paused:{paused}");
@@ -1052,6 +1056,8 @@ namespace WSJTX_Controller
                 udpClient2.Send(ba, ba.Length);
                 DebugOutput($"{Time()} >>>>>Sent 'Ack Req' cmd:7 cmdCheck:{cmdCheck}\n{emsg}");
 
+                HaltTx();       //sync up WSJT-X button state
+
                 cmdCheckTimer.Interval = 10000;           //set up cmd check timeout
                 cmdCheckTimer.Start();
                 DebugOutput($"{spacer}check cmd timer started");
@@ -1108,10 +1114,17 @@ namespace WSJTX_Controller
                     }
 
                     txEnabledConf = smsg.TxEnabled;
-                    if (lastTxEnabled == null) lastTxEnabled = smsg.TxEnabled;
-                    if (txEnabledConf != lastTxEnabled && txEnabledConf)
-                        ctrl.ShowMsg("Not ready yet... please wait", true);
+                    if (txEnabledConf != lastTxEnabled)         //lastTxEnabled can be null
+                    {
+                        if (txEnabledConf)
+                        {
+                            ctrl.ShowMsg("Not ready yet... please wait", true);
+                        }
+                    }
                     lastTxEnabled = txEnabledConf;
+
+                    wsjtxTxEnableButton = smsg.TxEnableButton;          //keep WSJT-X "Enable Tx" button state current
+                    lastWsjtxTxEnableButton = wsjtxTxEnableButton;
 
                     mode = smsg.Mode;
                     if (lastMode == null) lastMode = mode;
@@ -1250,7 +1263,8 @@ namespace WSJTX_Controller
                 {
                     StatusMessage smsg = (StatusMessage)msg;
                     DateTime dtNow = DateTime.UtcNow;
-                    if (opMode < OpModes.ACTIVE) DebugOutput($"{Time()}\n{msg}");
+                    if (opMode < OpModes.ACTIVE)
+                        DebugOutput($"{Time()}\n{msg}");
                     qsoStateConf = smsg.CurQsoState();
                     txEnabledConf = smsg.TxEnabled;
                     dxCall = smsg.DxCall;                               //unreliable info, can be edited manually
@@ -1279,13 +1293,11 @@ namespace WSJTX_Controller
 
                     if (lastXmitting == null) lastXmitting = transmitting;     //initialize
                     if (lastQsoState == WsjtxMessage.QsoStates.INVALID) lastQsoState = qsoStateConf;    //initialize WSJT-X user QSO state change detection
-                    if (lastTxEnabled == null) lastTxEnabled = txEnabledConf;     //initialize
                     if (lastDecoding == null) lastDecoding = decoding;     //initialize
                     if (lastTxWatchdog == null) lastTxWatchdog = smsg.TxWatchdog;   //initialize
                     if (lastTxFirst == null) lastTxFirst = txFirst;                     //initialize
                     if (lastDialFrequency == null) lastDialFrequency = smsg.DialFrequency; //initialize
                     if (smsg.TRPeriod != null) trPeriod = (int)smsg.TRPeriod;
-                    if (lastWsjtxTxEnableButton == null) lastWsjtxTxEnableButton = wsjtxTxEnableButton;
 
                     if (cmdCheckTimer.Enabled && smsg.Check == cmdCheck)             //found the random cmd check string, cmd receive ack'd
                     {
@@ -1378,8 +1390,8 @@ namespace WSJTX_Controller
                     {
                         if (!(transmitting && txMsg == "TUNE"))         //don't interrupt tuning
                         {
-                            DisableTx(false);               //this syncs txEnable state with WSJT-X
-                            HaltTx();
+                            DisableTx(false);
+                            HaltTx();                //this syncs txEnable state with WSJT-X
                         }
                         EnableMonitoring();                 //must do only after DisableTx and HaltTx
                         EnableDebugLog();
@@ -1471,24 +1483,21 @@ namespace WSJTX_Controller
                             }
                             else if (wsjtxTxEnableButton && lastWsjtxTxEnableButton == false)   //tx button checked
                             {
-
-                                if (opMode == OpModes.START && (evenOffset == 0 || oddOffset == 0))
+                                if (opMode == OpModes.START)
                                 {
-                                    DebugOutput($"{Time()}Halt Tx during auto freq update");
+                                    DebugOutput($"{Time()} Halt Tx, during opMode:START");
                                     ctrl.ShowMsg("Not ready yet... please wait", true);
                                     HaltTx();
                                 }
-                                else
-                                {
-                                    TxModeEnabled();
-                                }
+
+                                if (opMode == OpModes.ACTIVE) TxModeEnabled();
                             }
+                            lastWsjtxTxEnableButton = wsjtxTxEnableButton;
                         }
-                        lastWsjtxTxEnableButton = wsjtxTxEnableButton;
                     }
 
                     //check for changed WSJT-X Tx enabled
-                    if (lastTxEnabled != txEnabledConf)
+                    if (txEnabledConf != lastTxEnabled)
                     {
                         DebugOutput($"\n{Time()} WSJT-X event, Tx enable change confirmed, txEnabled:{txEnabled} (was {lastTxEnabled}) paused:{paused} txMode:{txMode}");
                         lastTxEnabled = txEnabledConf;
@@ -1931,7 +1940,8 @@ namespace WSJTX_Controller
 
         private void CheckNextXmit()
         {
-            //can be called anytime, but will be called at least once per decode period shortly before the tx period begins
+            //can be called anytime, but will be called at least once per decode period shortly before the tx period begins;
+            //can result in tx enabled (or disabled)
             DebugOutput($"{Time()} CheckNextXmit: txTimeout:{txTimeout} callQueue.Count:{callQueue.Count} qsoState:{qsoState}");
             DebugOutput($"{spacer}tx stop enabled:{ctrl.timedCheckBox.Checked} txStopDateTime(local):{txStopDateTime} now(local):{DateTime.Now}");
             DateTime dtNow = DateTime.UtcNow;      //helps with debugging to do this here
@@ -2188,19 +2198,19 @@ namespace WSJTX_Controller
             }
 
             //check for call in progress in listen mode with tx disabled
-            if (!paused && !txEnabled && callInProg != null)
+            if (!paused && !txEnabled && callInProg != null && autoFreqPauseMode == autoFreqPauseModes.DISABLED)
             {
                 DebugOutput($"{spacer}call in progress in listen mode with tx disabled");
-                EnableTx();
                 LogBeep();
+                EnableTx();
             }
 
             //check for auto freq update disabled while CQ mode previously in progress
             if (!paused && !txEnabled && txMode == TxModes.CALL_CQ && autoFreqPauseMode == autoFreqPauseModes.DISABLED)
             {
                 DebugOutput($"{spacer}auto freq update disabled while CQ mode previously in progress");
-                EnableTx();
                 LogBeep();
+                EnableTx();
             }
 
             //check for processing next call in queue, 
@@ -2210,13 +2220,13 @@ namespace WSJTX_Controller
             if (!paused && (txEnabled || txMode == TxModes.LISTEN || autoFreqPauseMode != autoFreqPauseModes.DISABLED))
             {
                 DebugOutput($"{spacer}paused:{paused} txEnabled:{txEnabled} txMode:{txMode} autoFreqPauseMode:{autoFreqPauseMode}");
-                CheckNextXmit();
+                CheckNextXmit();        //can result in tx enabled (or disabled)
             }
             else
             {
                 UpdateWsjtxOptions();
             }
-            DebugOutput($"{Time()} ProcessDecodes done\n");
+            DebugOutput($"{Time()} ProcessDecodes done");
         }
 
         //check for time to log (best done at Tx start to avoid any logging/dequeueing timing problem if done at Tx end)
@@ -2291,8 +2301,8 @@ namespace WSJTX_Controller
                             settingChanged = false;
                         }
                     }
-                    DisableTx(false);           //if done at opMode goes to START, this syncs txEnable state with WSJT-X
-                    HaltTx();
+                    DisableTx(false); 
+                    HaltTx();          //this syncs txEnable state with WSJT-X
                 }
                 return;
             }
@@ -2315,8 +2325,8 @@ namespace WSJTX_Controller
             }
             else
             {
-                //check for max Tx count during Tx hold                                            tempOnly
-                if (ctrl.freqCheckBox.Checked && autoFreqPauseMode == autoFreqPauseModes.DISABLED /*&& txMode == TxModes.LISTEN*/ && ctrl.holdCheckBox.Checked)
+                //check for max Tx count during Tx hold
+                if (ctrl.freqCheckBox.Checked && autoFreqPauseMode == autoFreqPauseModes.DISABLED && ctrl.holdCheckBox.Checked)
                 {
                     consecTxCount++;
                     if (consecTxCount >= maxConsecTxCount)
@@ -2380,7 +2390,6 @@ namespace WSJTX_Controller
                 else
                 {
                     consecCqCount = 0;
-                    SetCallInProg(toCall);
                     if (!sentCallList.Contains(toCall)) sentCallList.Add(toCall);
                 }
 
@@ -3284,6 +3293,9 @@ namespace WSJTX_Controller
                 if (!RecdAnyMsg(replyDecode.DeCall())) replyDecodePriority = replyDecode.Priority;
             }
 
+            //*******************
+            //Auto-generated call
+            //*******************
             //auto-generated notification of a call rec'd by WSJT-X;
             if (emsg.AutoGen)       //automatically-generated queue request, not clicked
             {
@@ -3384,7 +3396,10 @@ namespace WSJTX_Controller
                 return;
             }
 
-            //manually-selected queue request, can be any type of msg
+            //***********************
+            //Manually-generated call
+            //***********************
+            //can be any type of msg
 
             if (WaitingTimedStart())
             {
@@ -3417,33 +3432,32 @@ namespace WSJTX_Controller
                 return;
             }
 
-            if (emsg.Modifier)      //ctrl + alt key
+            //**********************
+            //Ctrl + Alt key pressed
+            //**********************
+            if (emsg.Modifier)
             {
                 if (toCall == "CQ")
                 {
                     ctrl.ShowMsg("Message is CQ", true);
                     return;
                 }
+
                 if (toCall == null)
                 {
                     ctrl.ShowMsg("No 'to' call in message", true);
                     return;
                 }
+
                 if (toCall == myCall)
                 {
                     ctrl.ShowMsg($"Message is to my station", true);
                     return;
                 }
+
                 if (paused)
                 {
-                    if (showTxModes)
-                    {
-                        ctrl.ShowMsg($"Select 'Operating mode' first", true);
-                    }
-                    else
-                    {
-                        ctrl.ShowMsg($"Select 'Enable Tx' in WSJT-X first", true);
-                    }
+                    ctrl.ShowMsg($"Select 'Enable Tx' in WSJT-X first", true);
                     return;
                 }
 
@@ -3461,17 +3475,17 @@ namespace WSJTX_Controller
                     }
                 }
 
-                DebugOutput($"{Time()} ctrl/alt/dbl-click on {toCall}");
-                DebugOutput($"{emsg}\n{spacer}msg:'{emsg.Message}'");
-                DebugOutput($"{spacer}AddSelectedCall, isCq:{isCq} deCall:'{deCall}' emsg.Priority:{emsg.Priority}isNewCountry:{emsg.IsNewCountry} isNewCountryOnBand:{emsg.IsNewCountryOnBand}");
-                DebugOutput($"{spacer}modifier:{emsg.Modifier} AutoGen:{emsg.AutoGen}");
-                
                 if (txMode == TxModes.LISTEN && emsg.Priority > (int)CallPriority.NEW_COUNTRY_ON_BAND && ctrl.replyNewDxccCheckBox.Checked && ctrl.replyNewOnlyCheckBox.Checked)
                 {
                     ctrl.ShowMsg($"{toCall} is not a new country", true);
                     return;
                 }
-                
+
+                DebugOutput($"\n{Time()} ctrl/alt/dbl-click on {toCall}");
+                DebugOutput($"{emsg}\n{spacer}msg:'{emsg.Message}'");
+                DebugOutput($"{spacer}AddSelectedCall, isCq:{isCq} deCall:'{deCall}' emsg.Priority:{emsg.Priority}isNewCountry:{emsg.IsNewCountry} isNewCountryOnBand:{emsg.IsNewCountryOnBand}");
+                DebugOutput($"{spacer}modifier:{emsg.Modifier} AutoGen:{emsg.AutoGen}");
+
                 //build a CQ message to reply to
                 EnqueueDecodeMessage nmsg = new EnqueueDecodeMessage();
                 nmsg.Mode = rawMode;
@@ -3493,16 +3507,15 @@ namespace WSJTX_Controller
 
                 if (txMode == TxModes.CALL_CQ)                  //if CQing, process this call immediately
                 {
-                    restartQueue = true;
                     txTimeout = true;                   //switch to other tx period
                     DebugOutput($"{spacer}txTimeout:{txTimeout} callInProg:'{CallPriorityString(callInProg)}' txFirst:{txFirst}");
-                    CheckNextXmit();
+                    CheckNextXmit();        //results in tx enabled
                     if (ctrl.skipGridCheckBox.Checked) settingChanged = true; //restore skipGrid setting overriden above
                 }
 
                 if ((!paused && !txEnabled && txMode == TxModes.LISTEN && callQueue.Count == 1) || nmsg.Priority < replyDecodePriority)
                 {
-                    restartQueue = true;
+                    if (!txTimeout) restartQueue = true;
                     DebugOutput($"{spacer}restartQueue:{restartQueue}");
 
                     if (nmsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL && !logList.Contains(replyDecode.DeCall()) && RecdAnyMsg(replyDecode.DeCall()))
@@ -3514,12 +3527,15 @@ namespace WSJTX_Controller
 
                 if (ctrl.callAddedCheckBox.Checked) Play("blip.wav");
             }
-            else   //only alt key
+            else
             {
+                //***************
+                //Alt key pressed
+                //***************
                 if ((!showTxModes || (txMode == TxModes.CALL_CQ)) && IsEvenPeriod((emsg.SinceMidnight.Minutes * 60) + emsg.SinceMidnight.Seconds) == txFirst)
                 {
                     string s = txFirst ? "odd" : "even/1st";
-                    ctrl.ShowMsg($"Select calls in '{s}' sequence", true);
+                    ctrl.ShowMsg($"Select calls in '{s}' period, or use Listen mode", true);
                     return;
                 }
 
@@ -3528,6 +3544,7 @@ namespace WSJTX_Controller
                     ctrl.ShowMsg($"{deCall} already on call list", true);
                     return;
                 }
+
                 if (txEnabled && deCall == callInProg)
                 {
                     ctrl.ShowMsg($"{deCall} is already in progress", true);
@@ -3536,7 +3553,7 @@ namespace WSJTX_Controller
 
                 if (emsg.Snr == noSnrAvail) emsg.UseStdReply = true;            //no SNR available, force standard (grid) reply (as opposed to SNR reply)
 
-                DebugOutput($"{Time()} alt/dbl-click on {toCall}");
+                DebugOutput($"\n{Time()}alt/dbl-click on {toCall}");
                 DebugOutput($"{emsg}\n{spacer}msg:'{emsg.Message}'");
                 DebugOutput($"{spacer}AddSelectedCall, isCq:{isCq} deCall:'{deCall}' emsg.Priority:{emsg.Priority} isNewCountry:{emsg.IsNewCountry} isNewCountryOnBand:{emsg.IsNewCountryOnBand}");
                 DebugOutput($"{spacer}emsg.Modifier:{emsg.Modifier} emsg.AutoGen:{emsg.AutoGen} emsg.Snr:{emsg.Snr} emsg:UseStdReply:{emsg:UseStdReply}");
@@ -3569,28 +3586,26 @@ namespace WSJTX_Controller
 
             try
             {
-                /*
-                if (*** != last***)
-                {
-                    ctrl.label5.ForeColor = Color.Red;
-                    chg = true;
-                }
-                ctrl.label5.Text = ***;
-                last*** = ***;
-                */
+                ctrl.label5.ForeColor = wsjtxTxEnableButton ? Color.White : Color.Black;
+                ctrl.label5.BackColor = wsjtxTxEnableButton ? Color.Red : Color.LightGray;
+                ctrl.label5.Text = $"En but: {wsjtxTxEnableButton.ToString().Substring(0, 1)}";
 
                 ctrl.label6.Text = $"{msg.GetType().Name.Substring(0, 6)}";
+
+                ctrl.label7.ForeColor = txEnabled ? Color.White : Color.Black;
+                ctrl.label7.BackColor = txEnabled ? Color.Red : Color.LightGray;
                 ctrl.label7.Text = $"txEn: {txEnabled.ToString().Substring(0, 1)}";
+
                 ctrl.label23.Text = $"t/c/p/e: {maxTxRepeat}/{maxPrevCqs}/{maxPrevPotaCqs}/{maxAutoGenEnqueue}";
 
-                if (replyCmd != lastReplyCmd)
+                if (replyCmd != lastReplyCmdDebug)
                 {
                     ctrl.label8.ForeColor = Color.Red;
                     ctrl.label21.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label8.Text = $"cmd from: {WsjtxMessage.DeCall(replyCmd)}";
-                lastReplyCmd = replyCmd;
+                lastReplyCmdDebug = replyCmd;
 
                 ctrl.label9.Text = $"opMode: {opMode}-{WsjtxMessage.NegoState}";
 
@@ -3598,50 +3613,69 @@ namespace WSJTX_Controller
                 s = (txTo == "CQ" ? null : txTo);
                 ctrl.label12.Text = $"tx to: {s}";
 
-                if (callInProg != lastCallInProg)
+                if (callInProg != lastCallInProgDebug)
                 {
                     ctrl.label13.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label13.Text = $"in-prog: {CallPriorityString(callInProg)}";
-                lastCallInProg = callInProg;
+                lastCallInProgDebug = callInProg;
 
                 if (qsoState != lastQsoStateDebug)
                 {
                     ctrl.label14.ForeColor = Color.Red;
                     chg = true;
                 }
-
                 ctrl.label14.Text = $"qso:{qsoState}";
                 lastQsoStateDebug = qsoState;
 
-                if (evenOffset != lastEvenOffset)
+                if (evenOffset != lastEvenOffsetDebug)
                 {
                     ctrl.label15.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label15.Text = $"evn:{evenOffset}";
-                lastEvenOffset = evenOffset;
+                lastEvenOffsetDebug = evenOffset;
 
-                if (oddOffset != lastOddOffset)
+                if (oddOffset != lastOddOffsetDebug)
                 {
                     ctrl.label16.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label16.Text = $"odd:{oddOffset}";
-                lastOddOffset = oddOffset;
+                lastOddOffsetDebug = oddOffset;
 
-                if (txTimeout != lastTxTimeout)
+                if (txTimeout != lastTxTimeoutDebug)
                 {
                     ctrl.label10.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label10.Text = $"t/o: {txTimeout.ToString().Substring(0, 1)}";
-                lastTxTimeout = txTimeout;
+                lastTxTimeoutDebug = txTimeout;
 
+                if (txFirst != lastTxFirstDebug)
+                {
+                    ctrl.label11.ForeColor = Color.Red;
+                    chg = true;
+                }
                 ctrl.label11.Text = $"txFirst: {txFirst.ToString().Substring(0, 1)}";
+                lastTxFirstDebug = txFirst;
+
+                if (restartQueue != lastRestartQueueDebug)
+                {
+                    ctrl.label24.ForeColor = Color.Red;
+                    chg = true;
+                }
                 ctrl.label24.Text = $"rstQ: {restartQueue.ToString().Substring(0, 1)}";
+                lastRestartQueueDebug = restartQueue;
+
+                if (transmitting != lastTransmittingDebug)
+                {
+                    ctrl.label25.ForeColor = Color.Red;
+                    chg = true;
+                }
                 ctrl.label25.Text = $"tx: {transmitting.ToString().Substring(0, 1)}";
+                lastTransmittingDebug = transmitting;
 
                 if (txMsg != lastTxMsgDebug)
                 {
@@ -3669,21 +3703,21 @@ namespace WSJTX_Controller
 
                 ctrl.label21.Text = $"replyCmd: {replyCmd}";
 
-                if (autoFreqPauseMode != lastAutoFreqPauseMode)
+                if (autoFreqPauseMode != lastAutoFreqPauseModeDebug)
                 {
                     ctrl.label17.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label17.Text = $"aFP:{autoFreqPauseMode}";
-                lastAutoFreqPauseMode = autoFreqPauseMode;
+                lastAutoFreqPauseModeDebug = autoFreqPauseMode;
 
-                if (consecCqCount != lastConsecCqCount)
+                if (consecCqCount != lastConsecCqCountDebug)
                 {
                     ctrl.label26.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label26.Text = $"cCQ:{consecCqCount}/{maxConsecCqCount}";
-                lastConsecCqCount = consecCqCount;
+                lastConsecCqCountDebug = consecCqCount;
 
                 if (consecTimeoutCount != lastConsecTimeoutCount)
                 {
@@ -3702,30 +3736,30 @@ namespace WSJTX_Controller
                 }
                 ctrl.label3.Text = $"dblClk";
 
-                if (consecTxCount != lastConsecTxCount)
+                if (consecTxCount != lastConsecTxCountDebug)
                 {
                     ctrl.label1.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label1.Text = $"cTx:{consecTxCount}/{maxConsecTxCount}";
-                lastConsecTxCount = consecTxCount;
+                lastConsecTxCountDebug = consecTxCount;
 
-                if (paused != lastPaused)
+                if (paused != lastPausedDebug)
                 {
                     ctrl.label2.ForeColor = Color.Red;
                     chg = true;
                 }
                 ctrl.label2.Text = $"paused:{paused.ToString().Substring(0, 1)}";
-                lastPaused = paused;
+                lastPausedDebug = paused;
 
-                if (txMode != lastTxMode)
+                if (txMode != lastTxModeDebug)
                 {
                     ctrl.label28.ForeColor = Color.Red;
                     chg = true;
                 }
                 string m = txMode == TxModes.LISTEN ? "Lis" : "CQ";
                 ctrl.label28.Text = $"TxMode:{m}";
-                lastTxMode = txMode;
+                lastTxModeDebug = txMode;
 
                 ctrl.label22.Text = $"tCall: {tCall}";
                 ctrl.label29.Text = $"shTx: {shortTx.ToString().Substring(0, 1)}";
@@ -3733,7 +3767,8 @@ namespace WSJTX_Controller
 
                 if (chg)
                 {
-                    ctrl.debugHighlightTimer.Interval = 2000;
+                    ctrl.debugHighlightTimer.Stop();
+                    ctrl.debugHighlightTimer.Interval = 4000;
                     ctrl.debugHighlightTimer.Start();
                 }
             }
@@ -4024,7 +4059,6 @@ namespace WSJTX_Controller
 
         private string CurrentStatus()
         {
-
             return $"myCall:'{myCall}' callInProg:'{CallPriorityString(callInProg)}' qsoState:{qsoState} lastQsoState:{lastQsoState} txMsg:'{txMsg}'\n           lastTxMsg:'{lastTxMsg}' curCmd:'{curCmd}' replyCmd:'{replyCmd}'\n           replyDecode:{replyDecode}\n           txTimeout:{txTimeout} xmitCycleCount:{xmitCycleCount} transmitting:{transmitting} mode:{mode} txEnabled:{txEnabled}\n           txFirst:{txFirst} dxCall:'{dxCall}' trPeriod:{trPeriod} settingChanged:{settingChanged}\n           newDirCq:{newDirCq} tCall:'{tCall}' decoding:{decoding} restartQueue:{restartQueue} paused:{paused} txMode:{txMode}\n           autoFreqPauseMode:{autoFreqPauseMode} consecCqCount:{consecCqCount} consecTimeoutCount:{consecTimeoutCount} holdCheckBox.Checked:{ctrl.holdCheckBox.Checked}\n           {CallQueueString()}";
         }
 
@@ -4188,6 +4222,8 @@ namespace WSJTX_Controller
 
         public void NextCall(bool confirm)
         {
+            if (paused) return;
+
             if (txTimeout)
             {
                 ctrl.ShowMsg("Processing next call...", true);
@@ -4202,26 +4238,31 @@ namespace WSJTX_Controller
         private void dialogTimer2_Tick(object sender, EventArgs e)
         {
             dialogTimer2.Stop();
+            if (paused) return;
             bool confirm = (bool)dialogTimer2.Tag;
 
             if (callQueue.Count == 0 && callInProg != null)
             {
                 if (!confirm || Confirm($"Cancel current call ({callInProg})?") == DialogResult.Yes)
                 {
+                    if (paused) return;
                     xmitCycleCount = 0;
                     ctrl.holdCheckBox.Checked = false;
                     DebugOutput($"{Time()} dialogTimer2_Tick, cancel current call {callInProg}, txTimeout:{txTimeout} xmitCycleCount:{xmitCycleCount} holdCheckBox.Checked{ctrl.holdCheckBox.Checked}");
-                    if (!paused && transmitting)
+
+                    if (txMode == TxModes.CALL_CQ)
                     {
                         HaltTx();
-                        if (txMode == TxModes.CALL_CQ) SetupCq(true);
+                        Thread.Sleep(500);
+                        SetupCq(true);
                     }
                     else
                     {
+                        if (transmitting) HaltTx();
                         txTimeout = true;
-                        DebugOutput($"{spacer}txTimeout:{txTimeout}");
                         CheckNextXmit();
                     }
+
                     UpdateDebug();
                     if (!confirm) ctrl.ShowMsg($"Cancelled current call {callInProg}", true);
                     return;
@@ -4235,11 +4276,27 @@ namespace WSJTX_Controller
                 string call = PeekNextCall(out msg);
                 if (!confirm || Confirm($"Reply to {call}?") == DialogResult.Yes)
                 {
+                    if (paused) return;
                     if (!callQueue.Contains(call)) return;          //call has already been removed or processed
+
+                    if (transmitting && (txMode == TxModes.LISTEN))
+                    {
+                        EnqueueDecodeMessage dmsg = new EnqueueDecodeMessage();
+                        DateTime dtNow = DateTime.Now;
+                        PeekNextCall(out dmsg);
+                        bool evenCall = IsEvenPeriod((dmsg.SinceMidnight.Minutes * 60) + dmsg.SinceMidnight.Seconds);
+                        bool evenPeriod = IsEvenPeriod((dtNow.Minute * 60) + dtNow.Second);       //listen mode can xmit on either period depending on current time
+                        if (evenCall == evenPeriod)     //reply is in same time period from msg
+                        {
+                            HaltTx();
+                        }
+                    }
+
                     txTimeout = true;
+                    xmitCycleCount = 0;
                     ctrl.holdCheckBox.Checked = false;
                     DebugOutput($"{Time()} dialogTimer2_Tick, reply next call {call}, txTimeout:{txTimeout} holdCheckBox.Checked{ctrl.holdCheckBox.Checked}");
-                    if (!paused) CheckNextXmit();
+                    CheckNextXmit();
                     UpdateDebug();
                     if (!confirm) ctrl.ShowMsg($"Replying to next call {call}", true);
                     return;
@@ -4464,7 +4521,8 @@ namespace WSJTX_Controller
                 ba = emsg.GetBytes();
                 udpClient2.Send(ba, ba.Length);
                 DebugOutput($"{Time()} >>>>>Sent 'Enable Tx' cmd:9\n{emsg}");
-                txEnabled = true;           //don't wait for status msg
+                txEnabled = true;
+                wsjtxTxEnableButton = true;
                 DebugOutput($"{spacer}txEnabled:{txEnabled}");
             }
             catch
@@ -4490,7 +4548,8 @@ namespace WSJTX_Controller
                 ba = emsg.GetBytes();
                 udpClient2.Send(ba, ba.Length);
                 DebugOutput($"{Time()} >>>>>Sent 'Disable Tx' cmd:8\n{emsg}");
-                txEnabled = false;           //don't wait for status msg
+                txEnabled = false;
+                wsjtxTxEnableButton = buttonState;
                 DebugOutput($"{spacer}txEnabled:{txEnabled}");
             }
             catch
@@ -4546,6 +4605,7 @@ namespace WSJTX_Controller
                 udpClient2.Send(ba, ba.Length);
                 DebugOutput($"{Time()} >>>>>Sent 'HaltTx' cmd:12\n{emsg}");
                 txEnabled = false;
+                lastWsjtxTxEnableButton = wsjtxTxEnableButton = false;
             }
         }
 

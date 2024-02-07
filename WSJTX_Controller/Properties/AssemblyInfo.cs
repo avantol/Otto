@@ -33,4 +33,4 @@ using System.Runtime.InteropServices;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]          //major.minor.build.private; freeze all so config re-used each new AssemblyFileVersion
-[assembly: AssemblyFileVersion("2.105.0.0")]      //major.minor.build.private; increment minor when new install pkg
+[assembly: AssemblyFileVersion("2.107.0.0")]      //major.minor.build.private; increment minor when new install pkg

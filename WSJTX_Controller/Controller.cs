@@ -428,7 +428,8 @@ namespace WSJTX_Controller
         private void debugHighlightTimer_Tick(object sender, EventArgs e)
         {
             debugHighlightTimer.Stop();
-            label5.ForeColor = Color.Black;
+            label24.ForeColor = Color.Black;
+            label25.ForeColor = Color.Black;
             label13.ForeColor = Color.Black;
             label10.ForeColor = Color.Black;
             label20.ForeColor = Color.Black;
@@ -438,7 +439,6 @@ namespace WSJTX_Controller
             label18.ForeColor = Color.Black;
             label12.ForeColor = Color.Black;
             label4.ForeColor = Color.Black;
-            label17.ForeColor = Color.Black;
             label14.ForeColor = Color.Black;
             label15.ForeColor = Color.Black;
             label16.ForeColor = Color.Black;
@@ -448,6 +448,7 @@ namespace WSJTX_Controller
             label1.ForeColor = Color.Black;
             label2.ForeColor = Color.Black;
             label28.ForeColor = Color.Black;
+            label11.ForeColor = Color.Black;
         }
 
         private void timeoutNumUpDown_ValueChanged(object sender, EventArgs e)
