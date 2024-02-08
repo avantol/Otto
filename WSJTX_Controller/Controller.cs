@@ -470,15 +470,12 @@ namespace WSJTX_Controller
             }
             UpdateTxLabel();
 
-            if (wsjtxClient != null)
-            {
-                wsjtxClient.TxRepeatChanged();
-            }
+            wsjtxClient.TxRepeatChanged();
         }
 
         public void UpdateMinSkipCount()
         {
-            if (wsjtxClient != null && wsjtxClient.showTxModes && wsjtxClient.txMode == WsjtxClient.TxModes.CALL_CQ)
+            if (wsjtxClient != null && wsjtxClient.showTxModes && cqModeButton.Checked)
             {
                 minSkipCount = 1;
             }
@@ -581,6 +578,8 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
 
         private void verLabel_DoubleClick(object sender, EventArgs e)
         {
+            if (!formLoaded) return;
+
             if (!wsjtxClient.advanced) return;
             wsjtxClient.debug = !wsjtxClient.debug;
             UpdateDebug();
@@ -776,6 +775,8 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
 
         private void ExcludeHelpLabel_Click(object sender, EventArgs e)
         {
+            if (!formLoaded) return;
+
             ShowHelp($"A 'normal' CQ is one that isn't directed to any specific place. The Controller will continuously add up to {wsjtxClient.maxAutoGenEnqueue} CQs to the reply list that meet these conditions:{Environment.NewLine}{Environment.NewLine}- The caller has not already been logged on the current band, and{Environment.NewLine}- The caller is on your Rx time slot, and{Environment.NewLine}- The caller hasn't been replied to more than {wsjtxClient.maxPrevCqs} times during this mode / band session,{Environment.NewLine}and{Environment.NewLine}- The CQ is not a 'directed' CQ, or if 'CQ DX the caller is on a different continent.{Environment.NewLine}{Environment.NewLine}If you enable 'from DX', the Controller will reply to CQs from continents other than yours.{Environment.NewLine}{Environment.NewLine}For example, this is useful in case you've already worked all states/entities on your continent, and only want to reply to CQs you haven't worked yet from other continents.{Environment.NewLine}{Environment.NewLine}- If you enable 'local' (your continent), the Controller will reply to those CQs.{Environment.NewLine}{Environment.NewLine}For example, this is useful in case you're running QRP, and expect you can't be heard on other continents, and only want to reply to CQs from your continent.{Environment.NewLine}{Environment.NewLine}(Note: If you have entered 'directed CQs' to reply to, those CQs will be replied to regardless of the 'from DX' or 'local' settings)");
         }
 
@@ -808,16 +809,15 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
 
         private void LimitTxHelpLabel_Click(object sender, EventArgs e)
         {
+            if (!formLoaded) return;
+
             string adv = wsjtxClient != null && wsjtxClient.advanced ? $"{Environment.NewLine}{Environment.NewLine}If 'Optimize' is selected, the maximum number of replies and CQs for the current call is automatically adjusted lower than the specified limit, to help process the call queue faster.{Environment.NewLine}{Environment.NewLine}If 'Hold' is selected, the repeat Tx limit is ignored, and replies to the current call sign are transmitted a maximum of {wsjtxClient.holdMaxTxRepeat} times." : "";
             ShowHelp($"This will limit the number of times the same message is transmitted.{Environment.NewLine}{Environment.NewLine}For example, it will limit the number of repeated transmitted replies or CQs for the current call. If there is no response to your reply messages when the limit is reached, the next call in the queue is processed (or if the call queue is empty, CQing will resume).{Environment.NewLine}{Environment.NewLine}As the repeat limit is reduced, the number of times a call can be automatically re-added to the call queue is increased, to compensate.{adv}");
         }
 
         private void optimizeCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            if (wsjtxClient != null)
-            {
-                wsjtxClient.TxRepeatChanged();
-            }
+            if (formLoaded) wsjtxClient.TxRepeatChanged();
         }
 
         private void timedCheckBoxChanged(object sender, EventArgs e)
@@ -885,6 +885,8 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
 
         private void ReplyNewLabel_Click(object sender, EventArgs e)
         {
+            if (!formLoaded) return;
+
             string s = "";
             if (wsjtxClient.showTxModes) s = $"{Environment.NewLine}{Environment.NewLine}If you select 'Exclusively', only new countries will be replied to, and all other calls will be ignored. (This option is only available when using the 'Listen for calls' operating mode).";
             ShowHelp($"Reply to any message (not just CQs) from any country you haven't worked yet on the current band.{Environment.NewLine}{Environment.NewLine}CAUTION: This is intended ONLY for calling the rare and most-wanted DX stations that are likely to have many competing callers! Think of it as a way to see a rare DX station first and act quickly.{Environment.NewLine}{Environment.NewLine}If a call sign is from a country never worked before on any band, the Controller will sound an audio notification and hold (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeat} times.{Environment.NewLine}{Environment.NewLine}If a call sign is from a country not worked before on the current band, the Controller will sound an audio notification and hold (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeatNewOnBand} times.{Environment.NewLine}{Environment.NewLine}If a call sign never replies or won't confirm QSOs easily, you can add that call sign to the 'Except' list, and it will be ignored.{s}");
@@ -1032,11 +1034,13 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
                 return;
             }
 
-            if (formLoaded) replyNewOnlyCheckBox.Enabled = wsjtxClient.txMode == WsjtxClient.TxModes.LISTEN;
+            if (formLoaded) replyNewOnlyCheckBox.Enabled = listenModeButton.Checked;
         }
 
         private void callListBox_MouseDown(object sender, MouseEventArgs e)
         {
+            if (!formLoaded) return;
+
             int idx = callListBox.IndexFromPoint(e.Location);
 
             if (e.Button == MouseButtons.Left)
@@ -1073,6 +1077,8 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
 
         private void useRR73CheckBox_Click(object sender, EventArgs e)
         {
+            if (!formLoaded) return;
+
             wsjtxClient.useRR73 = useRR73CheckBox.Checked;
         }
 
@@ -1087,7 +1093,7 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
         private void CheckManualSelection()
         {
 
-            if (formLoaded && wsjtxClient.showTxModes && wsjtxClient.txMode == WsjtxClient.TxModes.LISTEN && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked && !replyDirCqCheckBox.Checked && !replyNewDxccCheckBox.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked)
+            if (formLoaded && wsjtxClient.showTxModes && listenModeButton.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked && !replyDirCqCheckBox.Checked && !replyNewDxccCheckBox.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked)
             {
                 ShowMsg($"Select calls manually in WSJT-X (alt/dbl-click)", true);
             }
@@ -1155,10 +1161,10 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
                 verLabel_DoubleClick(null, null);
             }
 
+            if (!formLoaded) return;
+
             if (e.KeyCode == Keys.Escape)               //halt Tx immediately
             {
-                if (!formLoaded) return;
-
                 if (wsjtxClient.ConnectedToWsjtx())
                 {
                     wsjtxClient.Pause(true);

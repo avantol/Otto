@@ -3552,11 +3552,14 @@ namespace WSJTX_Controller
                     if (ctrl.skipGridCheckBox.Checked) settingChanged = true; //restore skipGrid setting overriden above
                 }
 
-                if ((!paused && !txEnabled && txMode == TxModes.LISTEN && callQueue.Count == 1) || nmsg.Priority < replyDecodePriority)
+                if ((!paused && !txEnabled && txMode == TxModes.LISTEN && callQueue.Count == 1))
                 {
                     if (!txTimeout) restartQueue = true;
                     DebugOutput($"{spacer}restartQueue:{restartQueue}");
+                }
 
+                if (nmsg.Priority < replyDecodePriority)
+                { 
                     if (nmsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL && !logList.Contains(replyDecode.DeCall()) && RecdAnyMsg(replyDecode.DeCall()))
                     {
                         AddCall(replyDecode.DeCall(), replyDecode);
