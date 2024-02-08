@@ -187,16 +187,13 @@ namespace WSJTX_Controller
         private Queue<string> soundQueue = new Queue<string>();
         bool wsjtxClosing = false;
         int heartbeatInterval = 15;           //expected recv interval, sec
-        private string toCallTxStart = null;
+        string toCallTxStart = null;
         DateTime txBeginTime = DateTime.MaxValue;
         bool shortTx = false;
         bool txInterrupted = false;
 
         public TxModes txMode;
         private TxModes lastTxModeDebug;
-
-        private string opState = "";
-        private string lastOpState = "";
 
         private struct UdpState
         {
@@ -2353,8 +2350,14 @@ namespace WSJTX_Controller
 
             DebugOutputStatus();
 
+            //save all call signs a report msg was sent to
+            //if this is an interrupting call, or is interrupted, 
+            //it still might be rec'd, no harm by recording the attempt
+            if ((WsjtxMessage.IsReport(txMsg) || WsjtxMessage.IsRogerReport(txMsg)) && !sentReportList.Contains(toCall)) sentReportList.Add(toCall);
+
             txInterrupted = (toCall != toCallTxStart);
-            shortTx = txBeginTime != DateTime.MaxValue && ((txEndTime - txBeginTime).TotalMilliseconds < trPeriod - 2000);
+            int lateTxMsec = ((int)trPeriod / 5);       //how late a tx start can be and still be assumed a valid tx
+            shortTx = txBeginTime != DateTime.MaxValue && ((txEndTime - txBeginTime).TotalMilliseconds < trPeriod - lateTxMsec);
             txBeginTime = DateTime.MaxValue;
 
             if (shortTx || txInterrupted)           //tx was invalid
@@ -2431,9 +2434,6 @@ namespace WSJTX_Controller
                     consecCqCount = 0;
                     if (!sentCallList.Contains(toCall)) sentCallList.Add(toCall);
                 }
-
-                //save all call signs a report msg was sent to
-                if ((WsjtxMessage.IsReport(txMsg) || WsjtxMessage.IsRogerReport(txMsg)) && !sentReportList.Contains(toCall)) sentReportList.Add(toCall);
 
                 if (debug)
                 {
