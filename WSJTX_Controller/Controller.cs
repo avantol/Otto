@@ -428,6 +428,7 @@ namespace WSJTX_Controller
         private void debugHighlightTimer_Tick(object sender, EventArgs e)
         {
             debugHighlightTimer.Stop();
+            label17.ForeColor = Color.Black;
             label24.ForeColor = Color.Black;
             label25.ForeColor = Color.Black;
             label13.ForeColor = Color.Black;
@@ -802,7 +803,7 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
             if (!formLoaded) return;
 
             wsjtxClient.WsjtxSettingChanged();
-            wsjtxClient.AutoFreqChanged(freqCheckBox.Checked);
+            wsjtxClient.AutoFreqChanged(freqCheckBox.Checked, false);
         }
 
         private void LimitTxHelpLabel_Click(object sender, EventArgs e)
