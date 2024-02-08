@@ -4558,7 +4558,12 @@ namespace WSJTX_Controller
         {
             try
             {
-                if (emsg == null || udpClient2 == null) return;
+                if (emsg == null || udpClient2 == null)
+                {
+                    DebugOutput($"{Time()} EnableTx skipped, udpClient2:{udpClient2} emsg:{emsg}");
+                    return;
+                }
+
                 DebugOutput($"{Time()} EnableTx, txEnabled:{txEnabled} processDecodeTimer.Enabled:{processDecodeTimer.Enabled}");
                 emsg.NewTxMsgIdx = 9;
                 emsg.Param0 = true;       //WSJT-X Enable Tx button state 
@@ -4586,7 +4591,12 @@ namespace WSJTX_Controller
 
             try
             {
-                if (emsg == null || udpClient2 == null) return;
+                if (emsg == null || udpClient2 == null)
+                {
+                    DebugOutput($"{Time()} DisableTx skipped, udpClient2:{udpClient2} emsg:{emsg}");
+                    return;
+                }
+
                 emsg.NewTxMsgIdx = 8;
                 emsg.Param0 = buttonState;    //set WSJT-X Enable Tx button state
                 emsg.GenMsg = $"";         //ignored
@@ -4618,6 +4628,12 @@ namespace WSJTX_Controller
 
         private void SetListenMode()
         {
+            if (udpClient2 == null)
+            {
+                DebugOutput($"{Time()} SetListenMode skipped, udpClient2:{udpClient2}");
+                return;
+            }
+
             emsg.NewTxMsgIdx = 14;
             emsg.Param0 = (txMode == TxModes.LISTEN);
             emsg.GenMsg = $"";         //ignored
@@ -4652,6 +4668,11 @@ namespace WSJTX_Controller
                 DebugOutput($"{Time()} >>>>>Sent 'HaltTx' cmd:12\n{emsg}");
                 txEnabled = false;
                 wsjtxTxEnableButton = false;
+            }
+            else
+            {
+                DebugOutput($"{Time()} HaltTx skipped, udpClient2:{udpClient2}");
+                return;
             }
         }
 
