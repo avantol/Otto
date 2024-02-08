@@ -4708,7 +4708,7 @@ namespace WSJTX_Controller
             processDecodeTimer2.Stop();
             DebugOutput($"\n{Time()} processDecodeTimer2 tick: stop, transmitting:{transmitting}");
             //                    "call CQ" mode and a late 73 may have caused WSJT-X to start calling "CQ" when it should be "CQ DX" or other directed CQ
-            if (!transmitting || (txMode == TxModes.CALL_CQ && qsoState == WsjtxMessage.QsoStates.CALLING)) ProcessDecodes();
+            if (!transmitting || (txMode == TxModes.CALL_CQ && (qsoState == WsjtxMessage.QsoStates.CALLING || qsoState == WsjtxMessage.QsoStates.SIGNOFF))) ProcessDecodes();
         }
 
         private void ProcessDblClick(string call, bool isNewCountryOnBand, bool isNewCountry)

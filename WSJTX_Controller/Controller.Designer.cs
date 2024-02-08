@@ -838,9 +838,9 @@
             this.logEarlyCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.logEarlyCheckBox.Location = new System.Drawing.Point(20, 293);
             this.logEarlyCheckBox.Name = "logEarlyCheckBox";
-            this.logEarlyCheckBox.Size = new System.Drawing.Size(230, 17);
+            this.logEarlyCheckBox.Size = new System.Drawing.Size(163, 17);
             this.logEarlyCheckBox.TabIndex = 25;
-            this.logEarlyCheckBox.Text = "Log early, at sending RRR (recommended!)";
+            this.logEarlyCheckBox.Text = "Log early, after sending RRR";
             this.logEarlyCheckBox.UseVisualStyleBackColor = true;
             this.logEarlyCheckBox.Visible = false;
             // 
@@ -1231,7 +1231,7 @@
             // 
             this.label30.AutoSize = true;
             this.label30.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label30.Location = new System.Drawing.Point(230, 652);
+            this.label30.Location = new System.Drawing.Point(230, 653);
             this.label30.Name = "label30";
             this.label30.Size = new System.Drawing.Size(34, 12);
             this.label30.TabIndex = 79;
