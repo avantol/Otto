@@ -42,7 +42,7 @@ namespace WSJTX_Controller
         public int offsetHiLimit = 2800;
         public bool useRR73 = false;                //applies to non-FT4 modes
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/169" };
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/170", "2.7.0/171", "2.7.0/172" };
         private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevCqs = 2;
