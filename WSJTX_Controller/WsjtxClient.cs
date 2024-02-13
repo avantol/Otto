@@ -42,7 +42,7 @@ namespace WSJTX_Controller
         public int offsetHiLimit = 2800;
         public bool useRR73 = false;                //applies to non-FT4 modes
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/170", "2.7.0/171", "2.7.0/172" };
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/172" };
         private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevCqs = 2;
@@ -1684,6 +1684,7 @@ namespace WSJTX_Controller
 
                 int callTimeouts = 0;
                 timeoutCallDict.TryGetValue(deCall, out callTimeouts);
+                DebugOutput($"{spacer}callTimeouts:{callTimeouts} maxTimeoutCalls:{maxTimeoutCalls}");
                 if (!dmsg.Is73orRR73() && callTimeouts >= maxTimeoutCalls)
                 {
                     ctrl.ShowMsg($"Blocking {deCall} temporarily...", false);
@@ -2157,57 +2158,66 @@ namespace WSJTX_Controller
             //*************************************
             //Directed CQ / new setting / best freq
             //*************************************
-            if (txMode == TxModes.CALL_CQ && qsoState == WsjtxMessage.QsoStates.CALLING)
+            if (txMode == TxModes.CALL_CQ && qsoState == WsjtxMessage.QsoStates.CALLING)      //tempOnly 2/13/24 added "callInProg == null"
             {
-                DebugOutput($"{spacer}CheckNextXmit(2) start");
-                if (ctrl.freqCheckBox.Checked && oddOffset > 0 && evenOffset > 0)
+                if (callInProg == null)
                 {
-                    //set/show frequency offset for period after decodes started
-                    emsg.NewTxMsgIdx = 10;
-                    emsg.GenMsg = $"";          //no effect
-                    emsg.SkipGrid = ctrl.skipGridCheckBox.Checked;
-                    emsg.UseRR73 = ctrl.useRR73CheckBox.Checked;
-                    emsg.CmdCheck = "";         //ignored
-                    emsg.Offset = AudioOffsetFromTxPeriod();
-                    ba = emsg.GetBytes();
-                    udpClient2.Send(ba, ba.Length);
-                    DebugOutput($"{Time()} >>>>>Sent 'Opt Req' cmd:10\n{emsg}");
-                    if (settingChanged)
-                    {
-                        ctrl.WsjtxSettingConfirmed();
-                        settingChanged = false;
-                    }
-                }
 
-                if (newDirCq)
+                    DebugOutput($"{spacer}CheckNextXmit(2) start");
+                    if (ctrl.freqCheckBox.Checked && oddOffset > 0 && evenOffset > 0)
+                    {
+                        //set/show frequency offset for period after decodes started
+                        emsg.NewTxMsgIdx = 10;
+                        emsg.GenMsg = $"";          //no effect
+                        emsg.SkipGrid = ctrl.skipGridCheckBox.Checked;
+                        emsg.UseRR73 = ctrl.useRR73CheckBox.Checked;
+                        emsg.CmdCheck = "";         //ignored
+                        emsg.Offset = AudioOffsetFromTxPeriod();
+                        ba = emsg.GetBytes();
+                        udpClient2.Send(ba, ba.Length);
+                        DebugOutput($"{Time()} >>>>>Sent 'Opt Req' cmd:10\n{emsg}");
+                        if (settingChanged)
+                        {
+                            ctrl.WsjtxSettingConfirmed();
+                            settingChanged = false;
+                        }
+                    }
+
+                    if (newDirCq)
+                    {
+                        emsg.NewTxMsgIdx = 6;
+                        emsg.GenMsg = $"CQ{NextDirCq()} {myCall} {myGrid}";
+                        emsg.SkipGrid = ctrl.skipGridCheckBox.Checked;
+                        emsg.UseRR73 = ctrl.useRR73CheckBox.Checked;
+                        emsg.CmdCheck = "";         //ignored
+                        ba = emsg.GetBytes();           //set up for CQ, auto, call 1st
+                        udpClient2.Send(ba, ba.Length);
+                        DebugOutput($"{Time()} >>>>>Sent 'Setup CQ' cmd:6\n{emsg}");
+                        qsoState = WsjtxMessage.QsoStates.CALLING;      //in case enqueueing call manually right now
+                        replyCmd = null;        //invalidate last reply cmd since not replying
+                        replyDecode = null;
+                        curCmd = emsg.GenMsg;
+                        newDirCq = false;
+                        DebugOutput($"{spacer}newDirCq:{newDirCq}");
+                        SetCallInProg(null);
+                        if (settingChanged)
+                        {
+                            ctrl.WsjtxSettingConfirmed();
+                            settingChanged = false;
+                        }
+                    }
+
+                    UpdateWsjtxOptions();
+                    DebugOutputStatus();
+                    DebugOutput($"{spacer}CheckNextXmit(2) end");
+                    UpdateDebug();      //unconditional
+                    return;
+                }
+                else
                 {
-                    emsg.NewTxMsgIdx = 6;
-                    emsg.GenMsg = $"CQ{NextDirCq()} {myCall} {myGrid}";
-                    emsg.SkipGrid = ctrl.skipGridCheckBox.Checked;
-                    emsg.UseRR73 = ctrl.useRR73CheckBox.Checked;
-                    emsg.CmdCheck = "";         //ignored
-                    ba = emsg.GetBytes();           //set up for CQ, auto, call 1st
-                    udpClient2.Send(ba, ba.Length);
-                    DebugOutput($"{Time()} >>>>>Sent 'Setup CQ' cmd:6\n{emsg}");
-                    qsoState = WsjtxMessage.QsoStates.CALLING;      //in case enqueueing call manually right now
-                    replyCmd = null;        //invalidate last reply cmd since not replying
-                    replyDecode = null;
-                    curCmd = emsg.GenMsg;
-                    newDirCq = false;
-                    DebugOutput($"{spacer}newDirCq:{newDirCq}");
-                    SetCallInProg(null);
-                    if (settingChanged)
-                    {
-                        ctrl.WsjtxSettingConfirmed();
-                        settingChanged = false;
-                    }
+                    LogBeep();
+                    DebugOutput($"{spacer}callInProg:{callInProg}");
                 }
-
-                UpdateWsjtxOptions();
-                DebugOutputStatus();
-                DebugOutput($"{spacer}CheckNextXmit(2) end");
-                UpdateDebug();      //unconditional
-                return;
             }
         }
 
@@ -2223,6 +2233,7 @@ namespace WSJTX_Controller
                 DebugOutput(ReportListString());
                 DebugOutput(LogListString());
                 DebugOutput(PotaLogDictString());
+                DebugOutput(TimeoutCallDictString());
             }
 
             if (restartQueue)           //queue went from empty to having entries, during decode(s) phase: restart queue processing
@@ -2493,13 +2504,13 @@ namespace WSJTX_Controller
                     }
                     lastTxMsg = txMsg;
                 }
-                else        //same "to" call as last xmit, count xmit cycles
+                else        //same "to" call as last xmit or maxTxRepeat = 1, count xmit cycles
                 {
                     if (toCall != "CQ")        //don't count CQ (or non-std) calls
                     {
                         xmitCycleCount++;           //count xmits to same call sign at end of xmit cycle
                         UpdateHoldTxRepeat();
-                        DebugOutput($"{spacer}(same msg) xmitCycleCount:{xmitCycleCount} txMsg:'{txMsg}' lastTxMsg:'{lastTxMsg}' holdCheckBox.Checked:{ctrl.holdCheckBox.Checked} holdTxRepeat:{holdTxRepeat}");
+                        DebugOutput($"{spacer}(same msg, or maxTxRepeat = 1) xmitCycleCount:{xmitCycleCount} txMsg:'{txMsg}' lastTxMsg:'{lastTxMsg}' holdCheckBox.Checked:{ctrl.holdCheckBox.Checked} holdTxRepeat:{holdTxRepeat}");
 
                         if ((!ctrl.holdCheckBox.Checked && xmitCycleCount >= maxTxRepeat - 1) || (ctrl.holdCheckBox.Checked && xmitCycleCount >= holdTxRepeat - 1))  //n msgs = n-1 diffs
                         {
@@ -2520,6 +2531,7 @@ namespace WSJTX_Controller
                                     timeoutCallDict.Remove(toCall);
                                 }
                                 timeoutCallDict.Add(toCall, ++callTimeouts);
+                                DebugOutput($"{spacer}callTimeouts:{callTimeouts}");
                             }
 
                             DebugOutput($"{spacer}reset(3) (timeout) xmitCycleCount:{xmitCycleCount} txTimeout:{txTimeout} tCall:'{tCall}' callInProg:'{CallPriorityString(callInProg)}' callTimeouts:{callTimeouts}");
@@ -2973,6 +2985,20 @@ namespace WSJTX_Controller
             StringBuilder sb = new StringBuilder();
             sb.Append("callDict [");
             foreach (var entry in callDict)
+            {
+                sb.Append(delim + entry.Key);
+                delim = " ";
+            }
+            sb.Append("]");
+            return sb.ToString();
+        }
+
+        private string TimeoutCallDictString()
+        {
+            string delim = "";
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{spacer}timeoutCallDict [");
+            foreach (var entry in timeoutCallDict)
             {
                 sb.Append(delim + entry.Key);
                 delim = " ";
