@@ -1001,9 +1001,9 @@
             this.replyNewDxccCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.replyNewDxccCheckBox.Location = new System.Drawing.Point(20, 222);
             this.replyNewDxccCheckBox.Name = "replyNewDxccCheckBox";
-            this.replyNewDxccCheckBox.Size = new System.Drawing.Size(118, 17);
+            this.replyNewDxccCheckBox.Size = new System.Drawing.Size(146, 17);
             this.replyNewDxccCheckBox.TabIndex = 49;
-            this.replyNewDxccCheckBox.Text = "Reply to rare DXCC";
+            this.replyNewDxccCheckBox.Text = "Reply to any rare DX msg";
             this.replyNewDxccCheckBox.UseVisualStyleBackColor = true;
             this.replyNewDxccCheckBox.Visible = false;
             this.replyNewDxccCheckBox.CheckedChanged += new System.EventHandler(this.replyNewDxccCheckBox_CheckedChanged);
@@ -1243,6 +1243,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(298, 690);
+            this.Controls.Add(this.replyNewOnlyCheckBox);
             this.Controls.Add(this.label30);
             this.Controls.Add(this.label29);
             this.Controls.Add(this.label28);
@@ -1334,7 +1335,6 @@
             this.Controls.Add(this.exceptLabel);
             this.Controls.Add(this.replyDirCqCheckBox);
             this.Controls.Add(this.replyDxCheckBox);
-            this.Controls.Add(this.replyNewOnlyCheckBox);
             this.Controls.Add(this.inProgTextBox);
             this.Controls.Add(this.inProgLabel);
             this.Controls.Add(this.modeGroupBox);

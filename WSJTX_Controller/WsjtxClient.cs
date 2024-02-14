@@ -2995,13 +2995,19 @@ namespace WSJTX_Controller
 
         private string TimeoutCallDictString()
         {
+            int count = 0;
             string delim = "";
             StringBuilder sb = new StringBuilder();
             sb.Append($"{spacer}timeoutCallDict [");
             foreach (var entry in timeoutCallDict)
             {
-                sb.Append(delim + entry.Key);
-                delim = " ";
+                sb.Append($"{delim}{entry.Key} {entry.Value}");
+                delim = ", ";
+                if (++count % 10 == 0)
+                {
+                    sb.Append($"\n{spacer}");
+                    delim = "";
+                }
             }
             sb.Append("]");
             return sb.ToString();
@@ -5489,7 +5495,9 @@ namespace WSJTX_Controller
                     ctrl.skipLevelPrompt = true;
                     showTxModes = false;
                     Application.Restart();
+                    return;
                 }
+                ctrl.firstRun = false;          //prevent asking again during this run (ex: config chgd, callsign chgd, etc.)
                 return;
             }
         }
