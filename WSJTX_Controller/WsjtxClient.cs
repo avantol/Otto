@@ -775,13 +775,11 @@ namespace WSJTX_Controller
                 }
                 else
                 {
-                    ctrl.holdCheckBox.Enabled = false;
                     ctrl.holdCheckBox.Checked = false;
                 }
             }
             else        //CQ mode
             {
-                ctrl.holdCheckBox.Enabled = false;
                 ctrl.holdCheckBox.Checked = false;
 
                 CheckCallQueuePeriod(txFirst);        //remove queued calls from wrong time period
@@ -916,7 +914,6 @@ namespace WSJTX_Controller
             if (haltTx) HaltTx();
             paused = true;
             txEnabled = false;
-            ctrl.holdCheckBox.Enabled = false;
             ctrl.holdCheckBox.Checked = false;
             DebugOutput($"{Time()} Pause paused:{paused}");
             DisableAutoFreqPause();
@@ -1371,7 +1368,6 @@ namespace WSJTX_Controller
 
                         if (opMode == OpModes.ACTIVE)
                         {
-                            ctrl.holdCheckBox.Enabled = true;
                             ctrl.holdCheckBox.Checked = false;
                             DisableAutoFreqPause();
                             ResetOpMode();
@@ -1396,7 +1392,6 @@ namespace WSJTX_Controller
 
                         if (opMode == OpModes.ACTIVE)
                         {
-                            ctrl.holdCheckBox.Enabled = true;
                             ctrl.holdCheckBox.Checked = false;
                             DisableAutoFreqPause();
                             ResetOpMode();
@@ -1545,7 +1540,6 @@ namespace WSJTX_Controller
                         DebugOutput($"\n{Time()} WSJT-X event, smsg.TxWatchdog:{smsg.TxWatchdog} (was {lastTxWatchdog})");
                         if (opMode == OpModes.ACTIVE)
                         {
-                            ctrl.holdCheckBox.Enabled = true;
                             ctrl.holdCheckBox.Checked = false;
                         }
                         if (smsg.TxWatchdog && opMode == OpModes.ACTIVE)        //only need this event if in valid mode
@@ -1615,7 +1609,6 @@ namespace WSJTX_Controller
 
                         if (opMode == OpModes.ACTIVE)
                         {
-                            ctrl.holdCheckBox.Enabled = true;
                             //ctrl.holdCheckBox.Checked = false;   don't do this, will reset hold enabled by new countrey
 
                             if (txMode == TxModes.CALL_CQ)              //won't be selected in WSHT-X manually when in listen mode (WSJT-X "Tx even/1st" control disabed)
@@ -2519,7 +2512,6 @@ namespace WSJTX_Controller
                             tCall = toCall;        //call to remove from queue, will be null if non-std msg
                             lastTxMsg = null;
                             SetCallInProg(null);
-                            ctrl.holdCheckBox.Enabled = false;
                             ctrl.holdCheckBox.Checked = false;
 
                             //this caller might call indefinitely, so count call attempts
@@ -2717,7 +2709,6 @@ namespace WSJTX_Controller
             UpdateDebug();
             UpdateAddCall();
             AutoFreqChanged(ctrl.freqCheckBox.Checked, true);
-            ctrl.holdCheckBox.Enabled = false;
             ctrl.holdCheckBox.Checked = false;
             ShowStatus();
             DebugOutput($"\n{Time()} ResetOpMode, opMode:{opMode} NegoState:{WsjtxMessage.NegoState}");
@@ -4578,7 +4569,7 @@ namespace WSJTX_Controller
         {
             ctrl.holdCheckBox.Enabled = (call != null);
             DebugOutput($"{spacer}SetCallInProg: callInProg:'{CallPriorityString(call)}' (was '{CallPriorityString(callInProg)}') holdCheckBox.Enabled:{ctrl.holdCheckBox.Enabled}");
-            if (call == null)
+            if (call == null || call != callInProg)
             {
                 ctrl.holdCheckBox.Checked = false;
             }
@@ -4808,7 +4799,6 @@ namespace WSJTX_Controller
             ctrl.ShowMsg("Manual call selection", false);
             UpdateDebug();
 
-            ctrl.holdCheckBox.Enabled = true;
             ctrl.holdCheckBox.Checked = priority <= (int)CallPriority.NEW_COUNTRY_ON_BAND;
 
             DebugOutput($"{spacer}new DX call selected manually, txTimeout:{txTimeout} xmitCycleCount:{xmitCycleCount} replyCmd:'{replyCmd}'");
