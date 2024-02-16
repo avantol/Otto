@@ -26,7 +26,7 @@ namespace WSJTX_Controller
         public bool alwaysOnTop = false;
         public bool firstRun = true;        //first run for each user level
         public bool skipLevelPrompt = false;
-        public bool offsetTune = true;
+        public bool offsetTune = false;
         public int helpDialogsPending = 0;
         public float dispFactor = 1.0F;
 
