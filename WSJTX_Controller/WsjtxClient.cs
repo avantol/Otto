@@ -1728,6 +1728,7 @@ namespace WSJTX_Controller
                     && ctrl.ignoreNonDxCheckBox.Checked
                     && !callQueue.Contains(deCall)
                     && !SentAnyMsg(deCall)
+                    && !dmsg.Is73orRR73()           //tempOnly 2/18/24
                     )
                 {
                     ctrl.ShowMsg($"{deCall} ignored (not DX)", false);
@@ -2218,10 +2219,10 @@ namespace WSJTX_Controller
         {
             //always called shortly before the tx period begins
             cancelledCall = null;
-            DebugOutput($"{Time()} ProcessDecodes: restartQueue:{restartQueue} txTimeout:{txTimeout} txEnabled:{txEnabled}\n{spacer}txMode:{txMode} paused:{paused} txEnabled:{txEnabled} cancelledCall:{cancelledCall}");
+            DebugOutput($"{Time()} ProcessDecodes: restartQueue:{restartQueue} txTimeout:{txTimeout} txEnabled:{txEnabled}\n{spacer}txMode:{txMode} paused:{paused} txEnabled:{txEnabled} cancelledCall:{cancelledCall} autoFreqPauseMode:{autoFreqPauseMode}");
+            DebugOutputStatus();
             if (debug)
             {
-                DebugOutput($"{spacer}{CallQueueString()}");
                 DebugOutput(AllCallDictString());
                 DebugOutput(ReportListString());
                 DebugOutput(LogListString());
@@ -2237,11 +2238,11 @@ namespace WSJTX_Controller
                 UpdateDebug();
             }
 
-            //check for call in progress in listen mode with tx disabled
+            //check for call in progress with tx disabled
             if (!paused && !txEnabled && callInProg != null && autoFreqPauseMode == autoFreqPauseModes.DISABLED)
             {
-                DebugOutput($"{spacer}call in progress in listen mode with tx disabled");
-                LogBeep();
+                DebugOutput($"{spacer}call in progress with tx disabled");
+                //LogBeep();
                 EnableTx();
             }
 
@@ -2249,7 +2250,7 @@ namespace WSJTX_Controller
             if (!paused && !txEnabled && txMode == TxModes.CALL_CQ && autoFreqPauseMode == autoFreqPauseModes.DISABLED)
             {
                 DebugOutput($"{spacer}auto freq update disabled while CQ mode previously in progress");
-                LogBeep();
+                //LogBeep();
                 EnableTx();
             }
 
@@ -2259,7 +2260,7 @@ namespace WSJTX_Controller
             //or check for Tx started manually during Rx
             if (!paused && (txEnabled || txMode == TxModes.LISTEN || autoFreqPauseMode != autoFreqPauseModes.DISABLED))
             {
-                DebugOutput($"{spacer}paused:{paused} txEnabled:{txEnabled} txMode:{txMode} autoFreqPauseMode:{autoFreqPauseMode}");
+                DebugOutput($"{spacer}check resume/disable/manual/auto freq");
                 CheckNextXmit();        //can result in tx enabled (or disabled)
             }
             else
@@ -3200,8 +3201,8 @@ namespace WSJTX_Controller
                 if (WsjtxMessage.NegoState == WsjtxMessage.NegoStates.WAIT)
                 {
                     status = "Waiting for WSJT-X...";
-                    foreColor = Color.White;
-                    backColor = Color.DarkOrange;
+                    foreColor = Color.Black;
+                    backColor = Color.Orange;
                     return;
                 }
 
@@ -3215,7 +3216,7 @@ namespace WSJTX_Controller
                 if (WsjtxMessage.NegoState == WsjtxMessage.NegoStates.INITIAL)
                 {
                     status = "Waiting for WSJT-X to reply...";
-                    foreColor = Color.White;
+                    foreColor = Color.Black;
                     backColor = Color.Orange;
                 }
                 else
@@ -3231,13 +3232,13 @@ namespace WSJTX_Controller
                             {
                                 status = "Connecting, wait until ready";
                             }
-                            foreColor = Color.White;
-                            backColor = Color.DarkOrange;
+                            foreColor = Color.Black;
+                            backColor = Color.Orange;
                             return;
                         case (int)OpModes.IDLE:
                             status = "Connecting, wait until ready";
-                            foreColor = Color.White;
-                            backColor = Color.DarkOrange;
+                            foreColor = Color.Black;
+                            backColor = Color.Orange;
                             return;
                         case (int)OpModes.ACTIVE:
                             string hold = ctrl.holdCheckBox.Checked ? "/hold" : "";
@@ -3575,19 +3576,10 @@ namespace WSJTX_Controller
                     if (ctrl.skipGridCheckBox.Checked) settingChanged = true; //restore skipGrid setting overriden above
                 }
 
-                if ((!paused && !txEnabled && txMode == TxModes.LISTEN && callQueue.Count == 1))
+                if (nmsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL && !logList.Contains(replyDecode.DeCall()) && RecdAnyMsg(replyDecode.DeCall()))
                 {
-                    if (!txTimeout) restartQueue = true;
-                    DebugOutput($"{spacer}restartQueue:{restartQueue}");
-                }
-
-                if (nmsg.Priority < replyDecodePriority)
-                { 
-                    if (nmsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL && !logList.Contains(replyDecode.DeCall()) && RecdAnyMsg(replyDecode.DeCall()))
-                    {
-                        AddCall(replyDecode.DeCall(), replyDecode);
-                        DebugOutput($"{spacer}re-added {replyDecode.DeCall()} to queue");
-                    }
+                    AddCall(replyDecode.DeCall(), replyDecode);
+                    DebugOutput($"{spacer}re-added {replyDecode.DeCall()} to queue");
                 }
 
                 if (ctrl.callAddedCheckBox.Checked) Play("blip.wav");
@@ -3618,24 +3610,18 @@ namespace WSJTX_Controller
 
                 if (emsg.Snr == noSnrAvail) emsg.UseStdReply = true;            //no SNR available, force standard (grid) reply (as opposed to SNR reply)
 
-                DebugOutput($"\n{Time()}alt/dbl-click on {toCall}");
+                DebugOutput($"\n{Time()} alt/dbl-click on {toCall}");
                 DebugOutput($"{emsg}\n{spacer}msg:'{emsg.Message}'");
                 DebugOutput($"{spacer}AddSelectedCall, isCq:{isCq} deCall:'{deCall}' emsg.Priority:{emsg.Priority} isNewCountry:{emsg.IsNewCountry} isNewCountryOnBand:{emsg.IsNewCountryOnBand}");
                 DebugOutput($"{spacer}emsg.Modifier:{emsg.Modifier} emsg.AutoGen:{emsg.AutoGen} emsg.Snr:{emsg.Snr} emsg:UseStdReply:{emsg:UseStdReply}");
-                
+
                 //message to reply to
                 AddCall(deCall, emsg);              //add to call queue
 
-                if ((!paused && !txEnabled && txMode == TxModes.LISTEN && callQueue.Count == 1) || emsg.Priority < replyDecodePriority)
+                if (emsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL && !logList.Contains(replyDecode.DeCall()) && RecdAnyMsg(replyDecode.DeCall()))
                 {
-                    restartQueue = true;
-                    DebugOutput($"{spacer}restartQueue:{restartQueue}");
-
-                    if (emsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL && !logList.Contains(replyDecode.DeCall()) && RecdAnyMsg(replyDecode.DeCall()))
-                    {
-                        AddCall(replyDecode.DeCall(), replyDecode);
-                        DebugOutput($"{spacer}re-added {replyDecode.DeCall()} to queue");
-                    }
+                    AddCall(replyDecode.DeCall(), replyDecode);
+                    DebugOutput($"{spacer}re-added {replyDecode.DeCall()} to queue");
                 }
 
                 if (ctrl.callAddedCheckBox.Checked) Play("blip.wav");
@@ -5480,7 +5466,7 @@ namespace WSJTX_Controller
             if (ctrl.firstRun && advanced && showTxModes)
             {
                 ctrl.BringToFront();
-                if (MessageBox.Show($"Please read carefully:{Environment.NewLine}{Environment.NewLine}You can now use a 'Listen for Calls' operating mode, which causes much less traffic on the band.{Environment.NewLine}{Environment.NewLine}             ********** WARNING!!!! **********{Environment.NewLine}{Environment.NewLine}You must be VERY cautious: Selecting 'Call CQ' or 'Listen for Calls' WILL KEY YOUR TRANMITTER PERIODICALLY whenever 'Enable Tx' is selected in WSJT-X!{Environment.NewLine}{Environment.NewLine}- By clicking 'OK', you understand and agree to this automatic and periodic method of keying your transmitter.{Environment.NewLine}{Environment.NewLine}- If you do not want this option, click 'Cancel', and the option will be removed permanently.{Environment.NewLine}{Environment.NewLine}This option is NOT recommended for high-power operation, where touching an active antenna can be painful and dangerous. Remember: ALWAYS THINK SAFETY!!!", pgmName, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK)
+                if (MessageBox.Show($"Please read carefully:{Environment.NewLine}{Environment.NewLine}You can now use a 'Listen for Calls' operating mode.{Environment.NewLine}{Environment.NewLine}Selecting 'Enable Tx' in WSJT-X will KEY YOUR TRANSMITTER PERIODICALLY!{Environment.NewLine}{Environment.NewLine}- By clicking 'OK', you understand and agree to this automatic method of keying your transmitter.{Environment.NewLine}{Environment.NewLine}- If you do not want this option, click 'Cancel', and the option will be removed permanently.", pgmName, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK)
                 {
                     ctrl.skipLevelPrompt = true;
                     showTxModes = false;
