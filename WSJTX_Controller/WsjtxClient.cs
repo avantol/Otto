@@ -381,7 +381,7 @@ namespace WSJTX_Controller
         {
             if (WsjtxMessage.NegoState == WsjtxMessage.NegoStates.WAIT)
             {
-                CheckWsjtxRunning();            //re-init if so
+                if (!suspendComm) CheckWsjtxRunning();            //re-init if so
                 return;
             }
             else
@@ -421,58 +421,57 @@ namespace WSJTX_Controller
                 ctrl.ShowMsg("WSJT-X detected", false);
                 Thread.Sleep(3000);     //wait for WSJT-X to open UDP
 
-                if (!overrideUdpDetect)
+                bool retry = true;
+                while (retry)
                 {
-                    if (!DetectUdpSettings(out ipAddress, out port, out multicast))
+                    if (!overrideUdpDetect)
                     {
-                        DebugOutput($"{spacer}unable to get IP address from WSJT-X");
+                        if (!DetectUdpSettings(out ipAddress, out port, out multicast))
+                        {
+                            DebugOutput($"{spacer}unable to get IP address from WSJT-X");
+                            heartbeatRecdTimer.Stop();
+                            suspendComm = true;
+                            ctrl.BringToFront();
+                            MessageBox.Show($"Unable to auto-detect WSJT-X's UDP IP address and port.\n\nAt 'Setup', select 'Override' and enter these manually.", pgmName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            ctrl.setupButton_Click(null, null);
+                            return;                 //suspendComm set to false at Setup close
+                        }
+                    }
+
+
+                    DebugOutput($"{spacer}ipAddress:{ipAddress} port:{port} multicast:{multicast}");
+                    string modeStr = multicast ? "multicast" : "unicast";
+                    try
+                    {
+                        if (multicast)
+                        {
+                            udpClient = new UdpClient();
+                            udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                            udpClient.Client.Bind(endPoint = new IPEndPoint(IPAddress.Any, port));
+                            udpClient.JoinMulticastGroup(ipAddress);
+                        }
+                        else
+                        {
+                            udpClient = new UdpClient(endPoint = new IPEndPoint(ipAddress, port));
+                        }
+                        DebugOutput($"{spacer}opened udpClient:{udpClient}");
+                        retry = false;
+                    }
+                    catch (Exception e)
+                    {
+                        e.ToString();
+                        DebugOutput($"{spacer}unable to open udpClient:{udpClient}\n{e}");
                         heartbeatRecdTimer.Stop();
                         suspendComm = true;
                         ctrl.BringToFront();
-                        MessageBox.Show($"Unable to auto-detect WSJT-X's UDP IP address and port.\n\nUse 'Setup' to enter these manually.", pgmName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        suspendComm = false;
-                        return;
+                        if (MessageBox.Show($"Unable to open WSJT-X's specified UDP port,\naddress: {ipAddress}\nport: {port}\nmode: {modeStr}.\n\nIn WSJT-X, select File | Settings | Reporting.\nAt 'UDP Server':\n- Enter '239.255.0.0' for 'UDP Server\n- Enter '2237' for 'UDP Server port number'\n- Select all checkboxes at 'Outgoing interfaces'\n- Click 'Retry' below to try opening the UDP port again.\n\nAlternatively:\n- Click 'Cancel' below for Controller's 'Setup'\n- Enter the UDP address and port as shown in WSJT-X, or\n- Select 'Override' to use auto-detected UDP settings.", pgmName, MessageBoxButtons.RetryCancel, MessageBoxIcon.Warning) == DialogResult.Cancel)
+                        {
+                            ctrl.setupButton_Click(null, null);
+                            return;                 //suspendComm set to false at Setup close
+                        }
                     }
                 }
-
-
-                DebugOutput($"{spacer}ipAddress:{ipAddress} port:{port} multicast:{multicast}");
-                string modeStr = multicast ? "multicast" : "unicast";
-                try
-                {
-                    if (multicast)
-                    {
-                        udpClient = new UdpClient();
-                        udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        udpClient.Client.Bind(endPoint = new IPEndPoint(IPAddress.Any, port));
-                        udpClient.JoinMulticastGroup(ipAddress);
-                    }
-                    else
-                    {
-                        udpClient = new UdpClient(endPoint = new IPEndPoint(ipAddress, port));
-                    }
-                    DebugOutput($"{spacer}opened udpClient:{udpClient}");
-                }
-                catch (Exception e)
-                {
-                    e.ToString();
-                    DebugOutput($"{spacer}unable to open udpClient:{udpClient}\n{e}");
-                    heartbeatRecdTimer.Stop();
-                    suspendComm = true;
-                    ctrl.BringToFront();
-                    string s;
-                    if (overrideUdpDetect)
-                    {
-                        s = "\n\n- Select 'Setup' to correct the UDP address and port, or unselect 'Override' to use auto-detected UDP settings.";
-                    }
-                    else
-                    {
-                        s = "\n\n- Select 'Setup' to enter the UDP address and port manually, and override auto-detected UDP settings.";
-                    }
-                    MessageBox.Show($"Unable to open UDP for the IP address ({ipAddress}) port ({port}) mode: ({modeStr}).{s}", pgmName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    suspendComm = false;
-                    return;
-                }
+                suspendComm = false;
 
                 udpSt = new UdpState();
                 udpSt.e = endPoint;
@@ -1374,7 +1373,7 @@ namespace WSJTX_Controller
                             txTimeout = true;       //cancel current calling
                             SetCallInProg(null);      //not calling anyone
                             if (!paused) Pause(true);
-                            ctrl.ShowMsg("Mode changed", true);
+                            ctrl.ShowMsg("Mode changed", false);
                             modeChanged = true;
                         }
                         CheckModeSupported();
@@ -1574,7 +1573,7 @@ namespace WSJTX_Controller
                                 ClearAudioOffsets();
                                 if (ctrl.freqCheckBox.Checked) AutoFreqChanged(true, false);
                                 Pause(true);
-                                if (!modeChanged) ctrl.ShowMsg("Frequency changed", true);
+                                if (!modeChanged) ctrl.ShowMsg("Frequency changed", false);
                             }
                         }
                         else        //new band
@@ -1591,7 +1590,7 @@ namespace WSJTX_Controller
                                 txTimeout = true;       //cancel current calling
                                 SetCallInProg(null);      //not calling anyone
                                 if (!paused) Pause(true); //WSJT-X may have already halted Tx, or done above
-                                if (!modeChanged) ctrl.ShowMsg("Band changed", true);
+                                if (!modeChanged) ctrl.ShowMsg("Band changed", false);
                                 DebugOutput($"{spacer}cleared queued calls:DialFrequency, txTimeout:{txTimeout} callInProg:'{CallPriorityString(callInProg)}'");
                             }
                         }
@@ -3408,7 +3407,8 @@ namespace WSJTX_Controller
                             //for the message to add (reason: don't lose earlier QSO progress)
                             AddCall(deCall, emsg);
 
-                            if ((!paused && !txEnabled && txMode == TxModes.LISTEN && callQueue.Count == 1) || emsg.Priority < replyDecodePriority)
+                            //                            tempOnly 2/20/24 tx not *temporarily* disabled during auto freq update
+                            if ((!paused && !txEnabled && autoFreqPauseMode == autoFreqPauseModes.DISABLED && txMode == TxModes.LISTEN && callQueue.Count == 1) || emsg.Priority < replyDecodePriority)
                             {
                                 restartQueue = true;
                                 DebugOutput($"{spacer}restartQueue:{restartQueue}");

@@ -29,6 +29,17 @@ namespace WSJTX_Controller
 
         private List<int> pcts = new List<int>() { 0, 25, 50 };
 
+        public void ShowUdpOnly()
+        {
+
+            diagLogCheckBox.Visible = false;
+            onTopCheckBox.Visible = false;
+            label3.Visible = false;
+            downButton.Visible = false;
+            upButton.Visible = false;
+            pctLabel.Visible = false;
+        }
+
         private void CancelButton_Click(object sender, EventArgs e)
         {
             Close();
@@ -48,10 +59,17 @@ namespace WSJTX_Controller
                 return;
             }
 
-            if (addrTextBox.Text.Split('.').Length != 4)
+            var a = addrTextBox.Text.Split('.');
+            if (a.Length != 4)
             {
                 string ex = multicast ? "239.255.0.0" : "127.0.0.1";
                 MessageBox.Show($"An IP address must be 4 numbers between 0 and 255, each separated by a period.\n\nExample: {ex}", wsjtxClient.pgmName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (overrideUdp && multicast && (a[0] != "239" || a[1] != "255"))
+            {
+                MessageBox.Show($"Multicast addresses must start with '239.255'.\n\nExample: 239.255.0.0", wsjtxClient.pgmName, MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
@@ -96,7 +114,6 @@ namespace WSJTX_Controller
             multicastcheckBox_CheckedChanged(null, null);
             onTopCheckBox.Checked = ctrl.alwaysOnTop;
             diagLogCheckBox.Checked = wsjtxClient.diagLog;
-            diagLogCheckBox.Visible = true;
             overrideCheckBox_CheckedChanged(null, null);
 
             pctIdx = pcts.IndexOf(pct);

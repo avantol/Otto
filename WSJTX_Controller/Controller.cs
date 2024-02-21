@@ -715,7 +715,8 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
                 return;
             }
 
-            setupTimer.Start();
+            setupTimer.Tag = e == null;
+            setupTimer.Start();        //show only UDP setup
         }
 
         private void setupTimer_Tick(object sender, EventArgs e)
@@ -725,6 +726,7 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
             setupDlg.wsjtxClient = wsjtxClient;
             setupDlg.ctrl = this;
             setupDlg.pct = windowSizePctIncr;
+            if ((bool)setupTimer.Tag) setupDlg.ShowUdpOnly();
             setupDlg.Show();
         }
 
@@ -733,6 +735,7 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
             initialConnFaultTimer.Start();
             TopMost = alwaysOnTop;
             setupDlg = null;
+            wsjtxClient.suspendComm = false;
         }
 
         private void addCallLabel_Click(object sender, EventArgs e)

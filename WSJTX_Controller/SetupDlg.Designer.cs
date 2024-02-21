@@ -190,7 +190,6 @@
             this.diagLogCheckBox.TabIndex = 6;
             this.diagLogCheckBox.Text = "Log diagnostic info";
             this.diagLogCheckBox.UseVisualStyleBackColor = true;
-            this.diagLogCheckBox.Visible = false;
             // 
             // label3
             // 
