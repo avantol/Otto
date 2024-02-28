@@ -1001,9 +1001,9 @@
             this.replyNewDxccCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.replyNewDxccCheckBox.Location = new System.Drawing.Point(20, 222);
             this.replyNewDxccCheckBox.Name = "replyNewDxccCheckBox";
-            this.replyNewDxccCheckBox.Size = new System.Drawing.Size(141, 17);
+            this.replyNewDxccCheckBox.Size = new System.Drawing.Size(134, 17);
             this.replyNewDxccCheckBox.TabIndex = 49;
-            this.replyNewDxccCheckBox.Text = "Reply to \"rare DX\" msgs";
+            this.replyNewDxccCheckBox.Text = "Reply to \'new DX\' calls";
             this.replyNewDxccCheckBox.UseVisualStyleBackColor = true;
             this.replyNewDxccCheckBox.Visible = false;
             this.replyNewDxccCheckBox.CheckedChanged += new System.EventHandler(this.replyNewDxccCheckBox_CheckedChanged);
