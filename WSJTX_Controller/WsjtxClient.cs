@@ -5523,7 +5523,6 @@ namespace WSJTX_Controller
                     {
                         ctrl.cqModeButton_Click(null, null);
                     }
-                    EnableTx();
                     TxModeEnabled();
 
                     UpdateModeSelection();
