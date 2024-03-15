@@ -778,7 +778,7 @@
             // 
             this.startLabel.AutoSize = true;
             this.startLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.startLabel.Location = new System.Drawing.Point(42, 371);
+            this.startLabel.Location = new System.Drawing.Point(35, 371);
             this.startLabel.Name = "startLabel";
             this.startLabel.Size = new System.Drawing.Size(29, 13);
             this.startLabel.TabIndex = 43;
@@ -938,10 +938,10 @@
             this.modeComboBox.FormattingEnabled = true;
             this.modeComboBox.Items.AddRange(new object[] {
             "calling CQ",
-            "listening for CQ"});
-            this.modeComboBox.Location = new System.Drawing.Point(72, 367);
+            "listening for calls"});
+            this.modeComboBox.Location = new System.Drawing.Point(66, 367);
             this.modeComboBox.Name = "modeComboBox";
-            this.modeComboBox.Size = new System.Drawing.Size(97, 21);
+            this.modeComboBox.Size = new System.Drawing.Size(101, 21);
             this.modeComboBox.TabIndex = 41;
             this.modeComboBox.Visible = false;
             // 
@@ -949,7 +949,7 @@
             // 
             this.stopLabel.AutoSize = true;
             this.stopLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.stopLabel.Location = new System.Drawing.Point(42, 393);
+            this.stopLabel.Location = new System.Drawing.Point(35, 393);
             this.stopLabel.Name = "stopLabel";
             this.stopLabel.Size = new System.Drawing.Size(100, 13);
             this.stopLabel.TabIndex = 44;

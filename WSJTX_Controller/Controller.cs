@@ -872,6 +872,7 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
 
         private void startTextBox_KeyPress(object sender, KeyPressEventArgs e)
         {
+            DeleteTextBoxSelection(startTextBox);
             char c = e.KeyChar;
             if (c == (char)Keys.Back || ((c >= '0' && c <= '9') && startTextBox.Text.Length < 4)) return;
             Console.Beep();
@@ -880,6 +881,7 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
 
         private void stopTextBox_KeyPress(object sender, KeyPressEventArgs e)
         {
+            DeleteTextBoxSelection(stopTextBox);
             char c = e.KeyChar;
             if (c == (char)Keys.Back || ((c >= '0' && c <= '9') && stopTextBox.Text.Length < 4)) return;
             Console.Beep();
@@ -1224,6 +1226,18 @@ private void replyDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             updateReplyNewOnlyCheckBoxEnabled();
             UpdateMinSkipCount();
+        }
+
+        private void DeleteTextBoxSelection(TextBox textBox)
+        {
+            if (textBox.SelectionLength > 0)
+            {
+                int start = textBox.SelectionStart;
+                string sel = textBox.Text.Substring(textBox.SelectionStart, textBox.SelectionLength);
+                textBox.Text = textBox.Text.Replace(sel, "");
+                textBox.SelectionLength = 0;
+                textBox.SelectionStart = start;
+            }
         }
     }
 }
