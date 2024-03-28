@@ -765,24 +765,17 @@ namespace WSJTX_Controller
             DisableAutoFreqPause();
             DebugOutput($"{spacer}txMode:{txMode} paused:{paused} callInProg:'{CallPriorityString(callInProg)}' txTimeout:{txTimeout} callQueue.Count:{callQueue.Count} tCall:'{tCall}'");
 
-            if (txMode == TxModes.LISTEN)
+            if (callInProg != null && replyDecode != null && replyDecode.Priority <= (int)CallPriority.NEW_COUNTRY_ON_BAND)
             {
-                if (callInProg != null && replyDecode != null && replyDecode.Priority <= (int)CallPriority.NEW_COUNTRY_ON_BAND)
-                {
-                    ctrl.holdCheckBox.Enabled = true;
-                    ctrl.holdCheckBox.Checked = true;
-                }
-                else
-                {
-                    ctrl.holdCheckBox.Checked = false;
-                }
+                ctrl.holdCheckBox.Enabled = true;
+                ctrl.holdCheckBox.Checked = true;
             }
-            else        //CQ mode
+            else
             {
                 ctrl.holdCheckBox.Checked = false;
-
-                CheckCallQueuePeriod(txFirst);        //remove queued calls from wrong time period
             }
+            
+            if (txMode == TxModes.CALL_CQ) CheckCallQueuePeriod(txFirst);        //remove queued calls from wrong time period
 
             if (callInProg != null)       //finish call in progress
             {
@@ -2361,9 +2354,12 @@ namespace WSJTX_Controller
             if ((WsjtxMessage.IsReport(txMsg) || WsjtxMessage.IsRogerReport(txMsg)) && !sentReportList.Contains(toCall)) sentReportList.Add(toCall);
 
             txInterrupted = (toCall != toCallTxStart);
-            int lateTxMsec = ((int)trPeriod / 5);       //how late a tx start can be and still be assumed a valid tx
-            shortTx = txBeginTime != DateTime.MaxValue && ((txEndTime - txBeginTime).TotalMilliseconds < trPeriod - lateTxMsec);
-            txBeginTime = DateTime.MaxValue;
+            if (mode == "FT8" || mode == "FT4")
+            {
+                //FT8: 12.64 sec, FT4: 4.48 sec tx time
+                int shortTxMsec = (mode == "FT8" ? 11000 : 3500);       //how short tx can be and still be assumed a valid tx
+                shortTx = (txBeginTime != DateTime.MaxValue) && ((txEndTime - txBeginTime).TotalMilliseconds < shortTxMsec);
+            }
 
             if (shortTx || txInterrupted)           //tx was invalid
             {
@@ -2587,6 +2583,7 @@ namespace WSJTX_Controller
                 DebugOutputStatus();
             }
 
+            txBeginTime = DateTime.MaxValue;
             DebugOutput($"{Time()} Tx end done");
             UpdateDebug();      //unconditional
         }
