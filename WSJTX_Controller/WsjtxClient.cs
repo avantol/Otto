@@ -1612,6 +1612,7 @@ namespace WSJTX_Controller
 
                             if (txMode == TxModes.CALL_CQ)              //won't be selected in WSHT-X manually when in listen mode (WSJT-X "Tx even/1st" control disabed)
                             {
+                                if (!paused && ctrl.freqCheckBox.Checked) SetupCq(false);  //set tx freq
                                 CheckCallQueuePeriod(txFirst);        //remove queued calls with opposite time period
                                 if (!paused && replyDecode != null)   //check current call time period
                                 {
