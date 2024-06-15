@@ -1,7 +1,7 @@
 # WSJTX-Controller-v2
 <br>Assistant for WSJT-X (the extremely popular amateur radio weak-signal digital modes program).
 <br>Modified WSJT-X is required, see installer releases at
-<br>https://github.com/avantol/WSJT-X_2.7.0/releases/tag/v2.7.0-172
+<br>https://github.com/avantol/WSJT-X_2.7.0/releases/tag/v2.7.0-185
 <br>More details at https://www.qrz.com/db/WM8Q
 <br><br><b><i>Use all appropriate caution since transmit can start at any time once you select "Enable Tx" in WSJT-X!!! Whenever the "Enable Tx" button is red, your antenna can be energized.</i></b>
 <br><br>At first run, basic mode:
