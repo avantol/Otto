@@ -178,7 +178,7 @@
             this.onTopCheckBox.Name = "onTopCheckBox";
             this.onTopCheckBox.Size = new System.Drawing.Size(138, 17);
             this.onTopCheckBox.TabIndex = 3;
-            this.onTopCheckBox.Text = "Controller always on top";
+            this.onTopCheckBox.Text = "Always on top";
             this.onTopCheckBox.UseVisualStyleBackColor = true;
             // 
             // diagLogCheckBox
@@ -198,7 +198,7 @@
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(114, 13);
             this.label3.TabIndex = 7;
-            this.label3.Text = "Controller window size:";
+            this.label3.Text = "Window size:";
             // 
             // downButton
             // 

@@ -127,6 +127,8 @@ namespace WsjtxUdpLib.Messages.Out
                     if (cur < message.Length) statusMessage.TxHaltClk = DecodeBool(message, ref cur);
                     if (cur < message.Length) statusMessage.TxEnableButton = DecodeBool(message, ref cur);
                     if (cur < message.Length) statusMessage.TxEnableClk = DecodeBool(message, ref cur);
+                    if (cur < message.Length) statusMessage.MyContinent = DecodeString(message, ref cur);
+                    if (cur < message.Length) statusMessage.MetricUnits = !DecodeBool(message, ref cur);
                 }
             }
 
@@ -163,6 +165,8 @@ namespace WsjtxUdpLib.Messages.Out
         public bool TxHaltClk { get; set; }
         public bool TxEnableButton { get; set; }
         public bool TxEnableClk { get; set; }
+        public string MyContinent { get; set; }
+        public bool MetricUnits { get; set; }
 
         public QsoStates CurQsoState()
         {

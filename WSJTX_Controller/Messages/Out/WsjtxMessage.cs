@@ -136,6 +136,14 @@ namespace WsjtxUdpLib.Messages.Out
             return (words[2] == "73");
         }
 
+        //msgs in the form "W1AW K1JT RR73";
+        public static bool IsRR73(string msg)
+        {
+            if (IsInvalid(msg)) return false;
+            string[] words = msg.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Count() != 3) return false;
+            return (words[2] == "RR73");
+        }
         //msg only in the form "CQ K1JT" or "CQ K1JT EM51" 
         //or "CQ WY K1JT" or "CQ WY K1JT EM51" or "CQ USA K1JT" or "CQ USA K1JT EM51"
         //or "CQ ASIA K1JT EM51" or "CQ POTA K1JT"
@@ -280,6 +288,7 @@ namespace WsjtxUdpLib.Messages.Out
         }
 
         //return the grid from a Reply or CQ
+        //null if grid not present
         //ex: "DN61"
         public static string Grid(string msg)
         {
@@ -305,6 +314,17 @@ namespace WsjtxUdpLib.Messages.Out
             if (!int.TryParse(grid.Substring(2, 2), out i)) return false;
             if (int.TryParse(grid.Substring(0, 2), out i)) return false;
             return true;
+        }
+
+        public static int Sequence(string msg)
+        {
+            if (IsCQ(msg)) return 1;
+            if (IsReply(msg)) return 2;
+            if (IsReport(msg)) return 3;
+            if (IsRogerReport(msg)) return 4;
+            if (IsRogers(msg)) return 5;
+            if (Is73orRR73(msg)) return 6;
+            return 0;
         }
 
         public static void Reinit()

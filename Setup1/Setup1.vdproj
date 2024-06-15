@@ -374,20 +374,20 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:WSJT-X Controller"
-        "ProductCode" = "8:{71D9CBF6-99EB-4B0E-9666-99C65E0A3609}"
-        "PackageCode" = "8:{6699D634-B5B6-4F9E-ADED-2D7AE27C37D2}"
+        "ProductName" = "8:Otto"
+        "ProductCode" = "8:{61E4C165-C5D4-4104-8BD8-B7A605B7E9AE}"
+        "PackageCode" = "8:{1ABAFAC1-E634-4BA5-B57F-2B8E09F0EB17}"
         "UpgradeCode" = "8:{58863A86-1E9E-4ECA-8AF5-C8BEE7AB4238}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:2.139.0"
+        "ProductVersion" = "8:2.171.0"
         "Manufacturer" = "8:WM8Q"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
-        "Title" = "8:WSJT-X Controller"
+        "Title" = "8:Otto"
         "Subject" = "8:"
         "ARPCONTACT" = "8:WM8Q"
         "Keywords" = "8:"
@@ -399,7 +399,7 @@
         "UseSystemSearchPath" = "11:TRUE"
         "TargetPlatform" = "3:0"
         "PreBuildEvent" = "8:"
-        "PostBuildEvent" = "8:\"C:\\Program Files (x86)\\kSign\\ksign\" c:\\users\\john\\desktop\\controller.ksign\r\ncopy /Y \"WSJT-X Controller.msi\"  ..\\.."
+        "PostBuildEvent" = "8:\"C:\\Program Files (x86)\\kSign\\ksign\" c:\\users\\john\\desktop\\controller.ksign\r\ncopy /Y \"WSJT-X Controller.msi\"  ..\\..\\Otto.msi"
         "RunPostBuildEvent" = "3:0"
         }
         "Registry"
@@ -498,7 +498,7 @@
         {
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_4CEC8521ECF84FA28E5A0264798BEDEE"
             {
-            "Name" = "8:WSJT-X Controller"
+            "Name" = "8:Otto"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -512,7 +512,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_AAFF2443EE6140A48428D253CC203119"
             {
-            "Name" = "8:WSJT-X Controller"
+            "Name" = "8:Otto"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -925,7 +925,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_13955C8D95C14416A597653571C6CA17"
             {
-            "SourcePath" = "8:"
+            "SourcePath" = "8:..\\WSJTX_Controller\\obj\\Debug\\WSJTX_Controller.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_F9097703E65145C3AE3E9348ED10AEA6"
