@@ -1,5 +1,5 @@
 # Otto
-<br>Assistant for WSJT-X (the extremely popular amateur radio weak-signal digital modes program).
+<br>Otto is your assistant for WSJT-X (the extremely popular amateur radio weak-signal digital modes program).
 <br><br>Download and run <b>Otto.msi</b> (above) to install: https://github.com/avantol/Otto/blob/main/Otto.msi
 <br><br>A modified WSJT-X is also required, download and run installer <b>wsjtx-v2.7.0-win64_MOD.exe</b> at
 <br>https://github.com/avantol/WSJT-X_2.7.0/releases/tag/v2.7.0-185
