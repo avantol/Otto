@@ -1,7 +1,7 @@
 # Otto
 <br>Assistant for WSJT-X (the extremely popular amateur radio weak-signal digital modes program).
 <br><br>Download and run Otto.msi to install: https://github.com/avantol/Otto/blob/main/Otto.msi
-<br><br>A modified WSJT-X is also required, download and run installer wsjtx-v270-win64_MOD.exe at
+<br><br>A modified WSJT-X is also required, download and run installer wsjtx-v2.7.0-win64_MOD.exe at
 <br>https://github.com/avantol/WSJT-X_2.7.0/releases/tag/v2.7.0-185
 <br><br><b><i>Use all appropriate caution since transmit can start at any time once you select "Enable Tx" in WSJT-X!!! Whenever the "Enable Tx" button is red, your antenna can be energized.</i></b>
 <br><br>At first run, basic mode:
