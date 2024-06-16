@@ -16,10 +16,10 @@
 <br>- call "CQ DX" and ignore non-DX replies
 <br>- reply automatically to "CQ DX" from stations that are actually DX to you
 <br>- reply automatically to local or DX stations you haven't worked yet
-<br>- reply automatically to CQs from POTA or SOTA stations
+<br>- reply automatically to CQs from POTA stations
 <br>- reply automatically to multi-stream stations
 <br>- automatically detect and transmit on the clearest section of a congested band
-<br>- manually queue up the interesting calls for automatic reply
+<br>- manually queue up any other interesting calls for automatic reply
 <br>- prioritize replies by distance, SNR, azimuth, or order received
 <br>- bypass WSJT-X's clunky way of skipping the grid message or using RR73
 <br>- transmit multiple directed CQs of your choice, for those hard-to-get QSOs
@@ -29,7 +29,6 @@
 <br>- never miss a "late" 73 again... instead, it gets logged
 <br>- automatically start and/or stop transmitting at specified time(s)
 <br>- reply to new countries "by mode" (FT8, FT4, etc.)
-<br>- call whoever someone else is calling (like that rare DX!) with just one action
 <br>- have much more time to research callers on QRZ, PSKReporter, and LOTW...
 <br><br>Tips:
 <br><br>Otto and the modified WSJT-X program run as a "versioned" pair, and Otto checks for the correct WSJT-X version when it starts. Be sure to download and install both programs!
