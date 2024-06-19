@@ -357,8 +357,8 @@ namespace WSJTX_Controller
                 iniFile.Write("windowPosX", (Math.Max(this.Location.X, 0)).ToString());
                 iniFile.Write("windowPosY", (Math.Max(this.Location.Y, 0)).ToString());
                 iniFile.Write("windowHt", this.Height.ToString());
-                iniFile.Write("ipAddress", wsjtxClient.ipAddress.ToString());   //string
-                iniFile.Write("port", wsjtxClient.port.ToString());
+                if (wsjtxClient.ipAddress != null) iniFile.Write("ipAddress", wsjtxClient.ipAddress.ToString());   //string
+                if (wsjtxClient.port != 0) iniFile.Write("port", wsjtxClient.port.ToString());
                 iniFile.Write("multicast", wsjtxClient.multicast.ToString());
                 iniFile.Write("timeout", ((int)timeoutNumUpDown.Value).ToString());
                 iniFile.Write("useDirected", callDirCqCheckBox.Checked.ToString());

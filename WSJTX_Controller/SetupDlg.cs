@@ -108,8 +108,8 @@ namespace WSJTX_Controller
         private void SetupDlg_Load(object sender, EventArgs e)
         {
             overrideCheckBox.Checked = wsjtxClient.overrideUdpDetect;
-            addrTextBox.Text = wsjtxClient.ipAddress.ToString();
-            portTextBox.Text = wsjtxClient.port.ToString();
+            if (wsjtxClient.ipAddress != null) addrTextBox.Text = wsjtxClient.ipAddress.ToString();
+            if (wsjtxClient.port != 0) portTextBox.Text = wsjtxClient.port.ToString();
             multicastcheckBox.Checked = wsjtxClient.multicast;
             multicastcheckBox_CheckedChanged(null, null);
             onTopCheckBox.Checked = ctrl.alwaysOnTop;

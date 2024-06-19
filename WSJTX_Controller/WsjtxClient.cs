@@ -468,9 +468,13 @@ namespace WSJTX_Controller
                             heartbeatRecdTimer.Stop();
                             suspendComm = true;
                             ctrl.BringToFront();
-                            MessageBox.Show($"Unable to auto-detect WSJT-X's UDP IP address and port.\n\nAt 'Setup', select 'Override' and enter these manually.", pgmName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            ctrl.setupButton_Click(null, null);
-                            return;                 //suspendComm set to false at Setup close
+                            if (MessageBox.Show($"Unable to auto-detect WSJT-X's UDP IP address and port.\n\nIf WSJT-X is running for the first time:\n- Close and restart WSJT-X now, then\n- Click 'Cancel' to try again.\n\nOtherwise,\n-Click OK to run 'Setup', then\n- Select 'Override' and enter WSJT-X's UDP IP address and port manually.", pgmName, MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
+                            {
+                                ctrl.setupButton_Click(null, null);
+                                return;                 //suspendComm set to false at Setup close
+                            }
+                            suspendComm = false;
+                            return;
                         }
                     }
 
@@ -5412,6 +5416,7 @@ namespace WSJTX_Controller
             }
         }
 
+        //return success or failure
         private bool DetectUdpSettings(out IPAddress ipa, out int prt, out bool mul)
         {
             //use WSJT-X.ini file for settings
@@ -5424,6 +5429,7 @@ namespace WSJTX_Controller
             string ipaString;
 
             if (!Directory.Exists(pathWsjtx)) return false;
+
             try
             {
                 IniFile iniFile = new IniFile(pathFileNameExtWsjtx);
