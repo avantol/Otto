@@ -5930,11 +5930,11 @@ namespace WSJTX_Controller
             ctrl.bandComboBox.Items.Clear();
             if (opMode == OpModes.ACTIVE)
             {
-                ctrl.bandComboBox.Items.AddRange(new string[] { "any band", $"on {FreqToBand(dialFrequency / 1e6)}" });
+                ctrl.bandComboBox.Items.AddRange(new string[] { "any band", $"for {FreqToBand(dialFrequency / 1e6)}" });
             }
             else
             {
-                ctrl.bandComboBox.Items.AddRange(new string[] { "any band", "on band" });
+                ctrl.bandComboBox.Items.AddRange(new string[] { "any band", "for band" });
             }
             ctrl.bandComboBox.SelectedIndex = idx;
         }

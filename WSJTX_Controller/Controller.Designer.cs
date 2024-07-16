@@ -1014,9 +1014,9 @@
             this.replyNewDxccCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.replyNewDxccCheckBox.Location = new System.Drawing.Point(20, 326);
             this.replyNewDxccCheckBox.Name = "replyNewDxccCheckBox";
-            this.replyNewDxccCheckBox.Size = new System.Drawing.Size(131, 17);
+            this.replyNewDxccCheckBox.Size = new System.Drawing.Size(187, 17);
             this.replyNewDxccCheckBox.TabIndex = 49;
-            this.replyNewDxccCheckBox.Text = "Reply to new \'rare DX\'";
+            this.replyNewDxccCheckBox.Text = "Reply longer to new \'rare DX\' calls";
             this.replyNewDxccCheckBox.UseVisualStyleBackColor = true;
             this.replyNewDxccCheckBox.Visible = false;
             this.replyNewDxccCheckBox.CheckedChanged += new System.EventHandler(this.replyNewDxccCheckBox_CheckedChanged);
@@ -1098,7 +1098,7 @@
             this.replyNewOnlyCheckBox.AutoSize = true;
             this.replyNewOnlyCheckBox.Enabled = false;
             this.replyNewOnlyCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.replyNewOnlyCheckBox.Location = new System.Drawing.Point(167, 326);
+            this.replyNewOnlyCheckBox.Location = new System.Drawing.Point(207, 326);
             this.replyNewOnlyCheckBox.Name = "replyNewOnlyCheckBox";
             this.replyNewOnlyCheckBox.Size = new System.Drawing.Size(77, 17);
             this.replyNewOnlyCheckBox.TabIndex = 59;
@@ -1425,7 +1425,6 @@
             this.Controls.Add(this.callLabel);
             this.Controls.Add(this.rankComboBox);
             this.Controls.Add(this.IncludeHelpLabel);
-            this.Controls.Add(this.replyNewOnlyCheckBox);
             this.Controls.Add(this.label30);
             this.Controls.Add(this.label29);
             this.Controls.Add(this.label28);
@@ -1518,6 +1517,7 @@
             this.Controls.Add(this.LogEarlyHelpLabel);
             this.Controls.Add(this.ReplyRR73HelpLabel);
             this.Controls.Add(this.replyNormCqLabel);
+            this.Controls.Add(this.replyNewOnlyCheckBox);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
