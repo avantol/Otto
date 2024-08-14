@@ -155,13 +155,28 @@ namespace WSJTX_Controller
             {
                 firstRun = iniFile.Read("firstRun") == "True";
                 debug = iniFile.Read("debug") == "True";
-                var rect = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+
                 int x = Math.Max(Convert.ToInt32(iniFile.Read("windowPosX")), 0);
                 int y = Math.Max(Convert.ToInt32(iniFile.Read("windowPosY")), 0);
-                if (x > rect.Width) x = rect.Width / 2;
-                if (y > rect.Height) y = rect.Height / 2;
+                //check all screens, extended screen may not be present
+                var screens = System.Windows.Forms.Screen.AllScreens;
+                bool found = false;
+                for (int scnIdx = 0; scnIdx < screens.Length; scnIdx++)
+                {
+                    if (screens[scnIdx].Bounds.Contains(new Point(x, y)))
+                    {
+                        found = true;       //found screen for window posn
+                        break;
+                    }
+                }
+                if (!found)     //default window posn
+                {
+                    x = 0;
+                    y = 0;
+                }
                 this.Location = new Point(x, y);
                 this.Height = Convert.ToInt32(iniFile.Read("windowHt"));
+
                 ipAddress = iniFile.Read("ipAddress");
                 port = Convert.ToInt32(iniFile.Read("port"));
                 multicast = iniFile.Read("multicast") == "True";

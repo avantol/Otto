@@ -581,7 +581,7 @@
             this.modeHelpLabel.BackColor = System.Drawing.SystemColors.Control;
             this.modeHelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.modeHelpLabel.ForeColor = System.Drawing.Color.Blue;
-            this.modeHelpLabel.Location = new System.Drawing.Point(99, 536);
+            this.modeHelpLabel.Location = new System.Drawing.Point(109, 536);
             this.modeHelpLabel.Name = "modeHelpLabel";
             this.modeHelpLabel.Size = new System.Drawing.Size(14, 13);
             this.modeHelpLabel.TabIndex = 53;
@@ -593,7 +593,7 @@
             // 
             this.modeGroupBox.Controls.Add(this.listenModeButton);
             this.modeGroupBox.Controls.Add(this.cqModeButton);
-            this.modeGroupBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.modeGroupBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.modeGroupBox.Location = new System.Drawing.Point(7, 536);
             this.modeGroupBox.Name = "modeGroupBox";
             this.modeGroupBox.Size = new System.Drawing.Size(273, 74);
@@ -607,7 +607,7 @@
             this.listenModeButton.AutoSize = true;
             this.listenModeButton.Location = new System.Drawing.Point(15, 23);
             this.listenModeButton.Name = "listenModeButton";
-            this.listenModeButton.Size = new System.Drawing.Size(92, 17);
+            this.listenModeButton.Size = new System.Drawing.Size(108, 17);
             this.listenModeButton.TabIndex = 1;
             this.listenModeButton.TabStop = true;
             this.listenModeButton.Text = "Listen for calls";
@@ -621,7 +621,7 @@
             this.cqModeButton.AutoSize = true;
             this.cqModeButton.Location = new System.Drawing.Point(15, 48);
             this.cqModeButton.Name = "cqModeButton";
-            this.cqModeButton.Size = new System.Drawing.Size(60, 17);
+            this.cqModeButton.Size = new System.Drawing.Size(67, 17);
             this.cqModeButton.TabIndex = 0;
             this.cqModeButton.TabStop = true;
             this.cqModeButton.Text = "Call CQ";
