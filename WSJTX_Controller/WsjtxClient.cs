@@ -1936,12 +1936,13 @@ namespace WSJTX_Controller
                         }
                         else        //decode is 73 or RR73 msg
                         {
-                            DebugOutput($"{spacer}decode is 73 or RR73");
+                            DebugOutput($"{spacer}decode is 73 or RR73, IsRR73:{dmsg.IsRR73()} isSpecOp:{isSpecOp} checked:{ctrl.replyRR73CheckBox.Checked} priority:{Priority(deCall)} contains:{logList.Contains(deCall)}");
                             if (deCall == callInProg)       ///check for ignore 73 or RR73
                             {
-                                //tempOnly
-                                if (dmsg.Is73() || !logList.Contains(deCall) || (!ctrl.replyRR73CheckBox.Checked && Priority(deCall) > (int)CallPriority.NEW_COUNTRY_ON_BAND))     //if new country, RR73 gets a 73 reply
+                                //                 WSJT-X will not reply automatically to RR73 for F/H msg
+                                if (dmsg.Is73() || (dmsg.IsRR73() && isSpecOp) || !logList.Contains(deCall) || (!ctrl.replyRR73CheckBox.Checked && Priority(deCall) > (int)CallPriority.NEW_COUNTRY_ON_BAND))     //if new country, RR73 gets a 73 reply
                                 {
+                                    if (dmsg.IsRR73()) DebugOutput($"{spacer}WSJT-X not replying to RR73");
                                     restartQueue = true;
                                     DebugOutput($"{spacer}call is in progress, restartQueue:{restartQueue}");
                                     if (!processDecodeTimer.Enabled || transmitting)
@@ -1951,14 +1952,14 @@ namespace WSJTX_Controller
                                         StartProcessDecodeTimer2();
                                     }
                                 }
-                                else
+                                else        //allow WSJT-X to reply automatically to RR73
                                 {
+                                    DebugOutput($"{spacer}WSJT-X is replying to RR73");
                                     AddTimeoutCall(deCall);
                                 }
                             }
                             else        //deCall is not call in progress
                             {
-                                //tempOnly
                                 //check for reply to RR73
                                 if (logList.Contains(deCall) && !callQueue.Contains(deCall) && dmsg.IsRR73() && (ctrl.replyRR73CheckBox.Checked || Priority(deCall) <= (int)CallPriority.NEW_COUNTRY_ON_BAND))        //call not in queue, enqueue the call data
                                 {
@@ -3499,7 +3500,7 @@ namespace WSJTX_Controller
                                 if (RemoveCallLast() == deCall) added = false;
                             }
 
-                            //                            tempOnly 2/20/24 tx not *temporarily* disabled during auto freq update
+                            //                            2/20/24 tx not *temporarily* disabled during auto freq update
                             if ((!paused && !txEnabled && autoFreqPauseMode == autoFreqPauseModes.DISABLED && txMode == TxModes.LISTEN && callQueue.Count == 1) || emsg.Priority < replyDecodePriority)
                             {
                                 restartQueue = true;
@@ -5679,7 +5680,7 @@ namespace WSJTX_Controller
 
             RemoveCall(call);
 
-            //tempOnly leave RR73 unmodified for correct reply to myCall
+            //leave RR73 unmodified for correct reply to myCall
             if (WsjtxMessage.Is73(dmsg.Message)) dmsg.Message = dmsg.Message.Replace("73", "");            //important, otherwise WSJT-X will not respond
             DebugOutput($"{spacer}removed {call}: msg:'{dmsg.Message}' {CallQueueString()}");
             return call;
@@ -5724,7 +5725,7 @@ namespace WSJTX_Controller
             rmsg.Mode = dmsg.Mode;
             if (toCall == myCall)
             {
-                //tempOnly leave any RR73 to myCall unmodified for correct reply
+                //leave any RR73 to myCall unmodified for correct reply
                 rmsg.Message = dmsg.Message;
             }
             else    //check for 73 or RR73 to any other call

@@ -163,7 +163,7 @@ namespace WSJTX_Controller
                 bool found = false;
                 for (int scnIdx = 0; scnIdx < screens.Length; scnIdx++)
                 {
-                    if (screens[scnIdx].Bounds.Contains(new Point(x, y)))
+                    if (screens[scnIdx].Bounds.Contains(new Point(x + (Bounds.Width / 2), y + (Bounds.Height / 2))))
                     {
                         found = true;       //found screen for window posn
                         break;

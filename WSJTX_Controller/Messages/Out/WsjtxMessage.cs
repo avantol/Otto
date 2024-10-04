@@ -257,7 +257,7 @@ namespace WsjtxUdpLib.Messages.Out
         //return the "directed to" part of the CQ call (if exists) in a possible CQ msg
         //msg only in the form "CQ WY K1JT" or "CQ WY K1JT EM51" or "CQ USA K1JT" 
         //or "CQ USA K1JT EM51"or "CQ ASIA K1JT EM51" or "CQ POTA K1JT"
-        //but not "CQ WY SD K1JT EM51" or "CQ WY SD K1JT" (not std msgs) or "CQ K1JT"
+        //but not "CQ WY SD K1JT EM51" or "CQ WY SD K1JT" (not std msgs) or "CQ K1JT" or "CQ CQ K1JT"
         //if not a directed CQ msg msg, return null
         public static string DirectedTo(string msg)
         {
@@ -272,6 +272,8 @@ namespace WsjtxUdpLib.Messages.Out
             //not "CQ WY SD K1JT" 
             if (words.Count() == 4 && IsAlphaOnly(words[1]) && IsAlphaOnly(words[2])) return null;
             //is "CQ USA K1JT EM51" or "CQ USA K1JT" 
+            if (words[1] == "CQ") return null;
+            //not "CQ CQ K1JT"
             return words[1];
         }
 
