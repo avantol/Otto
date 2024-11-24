@@ -28,8 +28,8 @@
 <br>- reply automatically to CQs directed to your state or country
 <br>- never miss a "late" 73 again... instead, it gets logged
 <br>- automatically start and/or stop transmitting at specified time(s)
-<br>- reply to new countries "by mode" (FT8, FT4, etc.)
-<br>- reply to countries that are new for a specific band in addition to new for any band 
+<br>- reply to calls that are new for a specific band in addition to new for any band 
+<br>- gain a huge advantage in QSOs with new DXCCs and DXpeditions by instantly and persistently replying 
 <br><br>Tips:
 <br><br>Otto and the modified WSJT-X program run as a "versioned" pair, and Otto checks for the correct WSJT-X version when it starts. Be sure to download and install both programs!
 <br><br>If you already have another WSJT-X version installed: You can install the required (modified) WSJT-X 2.7.0 program in an alternate destination folder if you like. Neither WSJT-X version will interfere with the other, and they share the same settings and preferences... convenient!
