@@ -1,9 +1,6 @@
 # Otto
 <br>Otto is your assistant for WSJT-X (the extremely popular amateur radio weak-signal digital modes program).
-<br>Click here > <b>https://github.com/avantol/Otto/blob/main/Otto.msi</b> (also listed above), then download <img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/dl.JPG"> and run <b>Otto.msi</b> to install.
-<br>At the Windows warning message, click "More info" then "Run anyway".
-<br><br>A modified WSJT-X is also required, download and run the installer <b>wsjtx-v2.7.0-win64_MOD.exe</b> at
-<br>https://github.com/avantol/WSJT-X_2.7.0/releases/tag/v2.7.0-185
+<br>Click here > <b>https://github.com/avantol/Otto/releases/latest</b> for download and installation instructions. 
 <br><br><b><i>Use all appropriate caution since transmit can start at any time once you select "Enable Tx" in WSJT-X!!! Whenever the "Enable Tx" button is red, your antenna can be energized.</i></b>
 <br><br>At first run, basic mode:
 <br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/ctrlv2_Init.JPG">
@@ -28,8 +25,8 @@
 <br>- reply automatically to CQs directed to your state or country
 <br>- never miss a "late" 73 again... instead, it gets logged
 <br>- automatically start and/or stop transmitting at specified time(s)
-<br>- reply to new countries "by mode" (FT8, FT4, etc.)
-<br>- reply to countries that are new for a specific band in addition to new for any band 
+<br>- reply to calls that are new for a specific band in addition to new for any band 
+<br>- gain a huge advantage in QSOs with new DXCCs and DXpeditions by instantly and persistently replying 
 <br><br>Tips:
 <br><br>Otto and the modified WSJT-X program run as a "versioned" pair, and Otto checks for the correct WSJT-X version when it starts. Be sure to download and install both programs!
 <br><br>If you already have another WSJT-X version installed: You can install the required (modified) WSJT-X 2.7.0 program in an alternate destination folder if you like. Neither WSJT-X version will interfere with the other, and they share the same settings and preferences... convenient!
