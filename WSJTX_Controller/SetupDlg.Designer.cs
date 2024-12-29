@@ -42,10 +42,6 @@
             this.CancelButton = new System.Windows.Forms.Button();
             this.onTopCheckBox = new System.Windows.Forms.CheckBox();
             this.diagLogCheckBox = new System.Windows.Forms.CheckBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.downButton = new System.Windows.Forms.Button();
-            this.upButton = new System.Windows.Forms.Button();
-            this.pctLabel = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -174,9 +170,9 @@
             // onTopCheckBox
             // 
             this.onTopCheckBox.AutoSize = true;
-            this.onTopCheckBox.Location = new System.Drawing.Point(23, 183);
+            this.onTopCheckBox.Location = new System.Drawing.Point(23, 167);
             this.onTopCheckBox.Name = "onTopCheckBox";
-            this.onTopCheckBox.Size = new System.Drawing.Size(138, 17);
+            this.onTopCheckBox.Size = new System.Drawing.Size(92, 17);
             this.onTopCheckBox.TabIndex = 3;
             this.onTopCheckBox.Text = "Always on top";
             this.onTopCheckBox.UseVisualStyleBackColor = true;
@@ -184,62 +180,18 @@
             // diagLogCheckBox
             // 
             this.diagLogCheckBox.AutoSize = true;
-            this.diagLogCheckBox.Location = new System.Drawing.Point(23, 206);
+            this.diagLogCheckBox.Location = new System.Drawing.Point(23, 195);
             this.diagLogCheckBox.Name = "diagLogCheckBox";
             this.diagLogCheckBox.Size = new System.Drawing.Size(115, 17);
             this.diagLogCheckBox.TabIndex = 6;
             this.diagLogCheckBox.Text = "Log diagnostic info";
             this.diagLogCheckBox.UseVisualStyleBackColor = true;
             // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(23, 162);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(114, 13);
-            this.label3.TabIndex = 7;
-            this.label3.Text = "Window size:";
-            // 
-            // downButton
-            // 
-            this.downButton.Font = new System.Drawing.Font("Consolas", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.downButton.Location = new System.Drawing.Point(143, 158);
-            this.downButton.Name = "downButton";
-            this.downButton.Size = new System.Drawing.Size(37, 23);
-            this.downButton.TabIndex = 8;
-            this.downButton.Text = "-";
-            this.downButton.UseVisualStyleBackColor = true;
-            this.downButton.Click += new System.EventHandler(this.downButton_Click);
-            // 
-            // upButton
-            // 
-            this.upButton.Font = new System.Drawing.Font("Consolas", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.upButton.Location = new System.Drawing.Point(237, 158);
-            this.upButton.Name = "upButton";
-            this.upButton.Size = new System.Drawing.Size(37, 23);
-            this.upButton.TabIndex = 9;
-            this.upButton.Text = "+";
-            this.upButton.UseVisualStyleBackColor = true;
-            this.upButton.Click += new System.EventHandler(this.upButton_Click);
-            // 
-            // pctLabel
-            // 
-            this.pctLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.pctLabel.Location = new System.Drawing.Point(184, 158);
-            this.pctLabel.Name = "pctLabel";
-            this.pctLabel.Size = new System.Drawing.Size(48, 23);
-            this.pctLabel.TabIndex = 10;
-            this.pctLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
             // SetupDlg
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(385, 264);
-            this.Controls.Add(this.pctLabel);
-            this.Controls.Add(this.upButton);
-            this.Controls.Add(this.downButton);
-            this.Controls.Add(this.label3);
             this.Controls.Add(this.diagLogCheckBox);
             this.Controls.Add(this.onTopCheckBox);
             this.Controls.Add(this.CancelButton);
@@ -247,7 +199,7 @@
             this.Controls.Add(this.groupBox1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Name = "SetupDlg";
-            this.Text = "Setup";
+            this.Text = "Configuration";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.SetupDlg_FormClosed);
             this.Load += new System.EventHandler(this.SetupDlg_Load);
             this.groupBox1.ResumeLayout(false);
@@ -273,9 +225,5 @@
         private System.Windows.Forms.CheckBox diagLogCheckBox;
         private System.Windows.Forms.Label udpHelpLabel;
         private System.Windows.Forms.CheckBox overrideCheckBox;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Button downButton;
-        private System.Windows.Forms.Button upButton;
-        private System.Windows.Forms.Label pctLabel;
     }
 }

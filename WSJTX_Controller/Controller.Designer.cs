@@ -66,7 +66,6 @@
             this.UseDirectedHelpLabel = new System.Windows.Forms.Label();
             this.AlertDirectedHelpLabel = new System.Windows.Forms.Label();
             this.LogEarlyHelpLabel = new System.Windows.Forms.Label();
-            this.verLabel3 = new System.Windows.Forms.Label();
             this.ExcludeHelpLabel = new System.Windows.Forms.Label();
             this.label24 = new System.Windows.Forms.Label();
             this.label25 = new System.Windows.Forms.Label();
@@ -138,6 +137,16 @@
             this.includeLabel = new System.Windows.Forms.Label();
             this.forLabel = new System.Windows.Forms.Label();
             this.bandComboBox = new System.Windows.Forms.ComboBox();
+            this.label31 = new System.Windows.Forms.Label();
+            this.label32 = new System.Windows.Forms.Label();
+            this.label33 = new System.Windows.Forms.Label();
+            this.label34 = new System.Windows.Forms.Label();
+            this.periodComboBox = new System.Windows.Forms.ComboBox();
+            this.periodLabel = new System.Windows.Forms.Label();
+            this.PeriodHelpLabel = new System.Windows.Forms.Label();
+            this.PriorityHelpLabel = new System.Windows.Forms.Label();
+            this.optionsButton = new System.Windows.Forms.Button();
+            this.guideLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.timeoutNumUpDown)).BeginInit();
             this.modeGroupBox.SuspendLayout();
             this.SuspendLayout();
@@ -186,11 +195,11 @@
             // verLabel
             // 
             this.verLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.verLabel.Location = new System.Drawing.Point(14, 658);
+            this.verLabel.Location = new System.Drawing.Point(14, 657);
             this.verLabel.Name = "verLabel";
-            this.verLabel.Size = new System.Drawing.Size(204, 12);
+            this.verLabel.Size = new System.Drawing.Size(113, 14);
             this.verLabel.TabIndex = 0;
-            this.verLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.verLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.verLabel.DoubleClick += new System.EventHandler(this.verLabel_DoubleClick);
             // 
             // label5
@@ -207,7 +216,7 @@
             // 
             this.label6.AutoSize = true;
             this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(106, 719);
+            this.label6.Location = new System.Drawing.Point(96, 719);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(29, 12);
             this.label6.TabIndex = 22;
@@ -297,7 +306,7 @@
             // 
             this.label15.AutoSize = true;
             this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label15.Location = new System.Drawing.Point(171, 719);
+            this.label15.Location = new System.Drawing.Point(187, 719);
             this.label15.Name = "label15";
             this.label15.Size = new System.Drawing.Size(34, 12);
             this.label15.TabIndex = 31;
@@ -325,12 +334,13 @@
             // 
             // verLabel2
             // 
-            this.verLabel2.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.verLabel2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.verLabel2.ForeColor = System.Drawing.Color.Blue;
-            this.verLabel2.Location = new System.Drawing.Point(97, 670);
+            this.verLabel2.Location = new System.Drawing.Point(15, 670);
             this.verLabel2.Name = "verLabel2";
-            this.verLabel2.Size = new System.Drawing.Size(122, 12);
+            this.verLabel2.Size = new System.Drawing.Size(110, 14);
             this.verLabel2.TabIndex = 34;
+            this.verLabel2.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.verLabel2.Click += new System.EventHandler(this.verLabel2_Click);
             // 
             // replyDirCqCheckBox
@@ -355,13 +365,14 @@
             this.alertTextBox.Size = new System.Drawing.Size(110, 20);
             this.alertTextBox.TabIndex = 20;
             this.alertTextBox.Visible = false;
+            this.alertTextBox.TextChanged += new System.EventHandler(this.alertTextBox_TextChanged);
             this.alertTextBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.alertTextBox_KeyPress);
             this.alertTextBox.Leave += new System.EventHandler(this.alertTextBox_Leave);
             // 
             // timeoutNumUpDown
             // 
             this.timeoutNumUpDown.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.timeoutNumUpDown.Location = new System.Drawing.Point(65, 414);
+            this.timeoutNumUpDown.Location = new System.Drawing.Point(60, 413);
             this.timeoutNumUpDown.Name = "timeoutNumUpDown";
             this.timeoutNumUpDown.Size = new System.Drawing.Size(34, 20);
             this.timeoutNumUpDown.TabIndex = 12;
@@ -371,7 +382,7 @@
             // 
             this.limitLabel.AutoSize = true;
             this.limitLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.limitLabel.Location = new System.Drawing.Point(17, 417);
+            this.limitLabel.Location = new System.Drawing.Point(17, 415);
             this.limitLabel.Name = "limitLabel";
             this.limitLabel.Size = new System.Drawing.Size(40, 13);
             this.limitLabel.TabIndex = 13;
@@ -381,20 +392,20 @@
             // 
             this.repeatLabel.AutoSize = true;
             this.repeatLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.repeatLabel.Location = new System.Drawing.Point(103, 417);
+            this.repeatLabel.Location = new System.Drawing.Point(98, 415);
             this.repeatLabel.Name = "repeatLabel";
-            this.repeatLabel.Size = new System.Drawing.Size(52, 13);
+            this.repeatLabel.Size = new System.Drawing.Size(64, 13);
             this.repeatLabel.TabIndex = 14;
-            this.repeatLabel.Text = "repeat Tx";
+            this.repeatLabel.Text = "repeated Tx";
             // 
             // setupButton
             // 
             this.setupButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.setupButton.Location = new System.Drawing.Point(227, 656);
+            this.setupButton.Location = new System.Drawing.Point(235, 658);
             this.setupButton.Name = "setupButton";
-            this.setupButton.Size = new System.Drawing.Size(57, 25);
+            this.setupButton.Size = new System.Drawing.Size(51, 25);
             this.setupButton.TabIndex = 35;
-            this.setupButton.Text = "&Setup";
+            this.setupButton.Text = "Config";
             this.setupButton.UseVisualStyleBackColor = true;
             this.setupButton.Click += new System.EventHandler(this.setupButton_Click);
             // 
@@ -524,22 +535,13 @@
             this.LogEarlyHelpLabel.BackColor = System.Drawing.SystemColors.Control;
             this.LogEarlyHelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LogEarlyHelpLabel.ForeColor = System.Drawing.Color.Blue;
-            this.LogEarlyHelpLabel.Location = new System.Drawing.Point(140, 398);
+            this.LogEarlyHelpLabel.Location = new System.Drawing.Point(138, 397);
             this.LogEarlyHelpLabel.Name = "LogEarlyHelpLabel";
             this.LogEarlyHelpLabel.Size = new System.Drawing.Size(14, 13);
             this.LogEarlyHelpLabel.TabIndex = 47;
             this.LogEarlyHelpLabel.Text = "?";
             this.LogEarlyHelpLabel.Visible = false;
             this.LogEarlyHelpLabel.Click += new System.EventHandler(this.LogEarlyHelpLabel_Click);
-            // 
-            // verLabel3
-            // 
-            this.verLabel3.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.verLabel3.Location = new System.Drawing.Point(16, 670);
-            this.verLabel3.Name = "verLabel3";
-            this.verLabel3.Size = new System.Drawing.Size(75, 12);
-            this.verLabel3.TabIndex = 48;
-            this.verLabel3.TextAlign = System.Drawing.ContentAlignment.TopRight;
             // 
             // ExcludeHelpLabel
             // 
@@ -596,7 +598,7 @@
             this.modeGroupBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.modeGroupBox.Location = new System.Drawing.Point(7, 536);
             this.modeGroupBox.Name = "modeGroupBox";
-            this.modeGroupBox.Size = new System.Drawing.Size(273, 74);
+            this.modeGroupBox.Size = new System.Drawing.Size(280, 74);
             this.modeGroupBox.TabIndex = 56;
             this.modeGroupBox.TabStop = false;
             this.modeGroupBox.Text = "Operating mode:";
@@ -640,6 +642,7 @@
             this.msgTextBox.Size = new System.Drawing.Size(270, 14);
             this.msgTextBox.TabIndex = 58;
             this.msgTextBox.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.msgTextBox.UseMnemonic = false;
             this.msgTextBox.MouseUp += new System.Windows.Forms.MouseEventHandler(this.msgTextBox_MouseUp);
             // 
             // inProgTextBox
@@ -664,6 +667,7 @@
             this.inProgLabel.TabIndex = 60;
             this.inProgLabel.Text = "In progress:";
             this.inProgLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.inProgLabel.UseMnemonic = false;
             this.inProgLabel.Visible = false;
             // 
             // LimitTxHelpLabel
@@ -672,11 +676,12 @@
             this.LimitTxHelpLabel.BackColor = System.Drawing.SystemColors.Control;
             this.LimitTxHelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.LimitTxHelpLabel.ForeColor = System.Drawing.Color.Blue;
-            this.LimitTxHelpLabel.Location = new System.Drawing.Point(277, 418);
+            this.LimitTxHelpLabel.Location = new System.Drawing.Point(277, 416);
             this.LimitTxHelpLabel.Name = "LimitTxHelpLabel";
             this.LimitTxHelpLabel.Size = new System.Drawing.Size(14, 13);
             this.LimitTxHelpLabel.TabIndex = 61;
             this.LimitTxHelpLabel.Text = "?";
+            this.LimitTxHelpLabel.Visible = false;
             this.LimitTxHelpLabel.Click += new System.EventHandler(this.LimitTxHelpLabel_Click);
             // 
             // StartHelpLabel
@@ -685,7 +690,7 @@
             this.StartHelpLabel.BackColor = System.Drawing.SystemColors.Control;
             this.StartHelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.StartHelpLabel.ForeColor = System.Drawing.Color.Blue;
-            this.StartHelpLabel.Location = new System.Drawing.Point(277, 455);
+            this.StartHelpLabel.Location = new System.Drawing.Point(277, 475);
             this.StartHelpLabel.Name = "StartHelpLabel";
             this.StartHelpLabel.Size = new System.Drawing.Size(14, 13);
             this.StartHelpLabel.TabIndex = 62;
@@ -699,7 +704,7 @@
             this.AutoFreqHelpLabel.BackColor = System.Drawing.SystemColors.Control;
             this.AutoFreqHelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.AutoFreqHelpLabel.ForeColor = System.Drawing.Color.Blue;
-            this.AutoFreqHelpLabel.Location = new System.Drawing.Point(277, 436);
+            this.AutoFreqHelpLabel.Location = new System.Drawing.Point(150, 436);
             this.AutoFreqHelpLabel.Name = "AutoFreqHelpLabel";
             this.AutoFreqHelpLabel.Size = new System.Drawing.Size(14, 13);
             this.AutoFreqHelpLabel.TabIndex = 63;
@@ -767,7 +772,7 @@
             // 
             this.replyDxCheckBox.AutoSize = true;
             this.replyDxCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.replyDxCheckBox.Location = new System.Drawing.Point(201, 263);
+            this.replyDxCheckBox.Location = new System.Drawing.Point(203, 263);
             this.replyDxCheckBox.Name = "replyDxCheckBox";
             this.replyDxCheckBox.Size = new System.Drawing.Size(41, 17);
             this.replyDxCheckBox.TabIndex = 30;
@@ -831,6 +836,7 @@
             this.directedTextBox.Size = new System.Drawing.Size(110, 20);
             this.directedTextBox.TabIndex = 23;
             this.directedTextBox.Visible = false;
+            this.directedTextBox.TextChanged += new System.EventHandler(this.directedTextBox_TextChanged);
             this.directedTextBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.directedTextBox_KeyPress);
             this.directedTextBox.Leave += new System.EventHandler(this.directedTextBox_Leave);
             // 
@@ -849,7 +855,7 @@
             // 
             this.logEarlyCheckBox.AutoSize = true;
             this.logEarlyCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.logEarlyCheckBox.Location = new System.Drawing.Point(20, 397);
+            this.logEarlyCheckBox.Location = new System.Drawing.Point(20, 396);
             this.logEarlyCheckBox.Name = "logEarlyCheckBox";
             this.logEarlyCheckBox.Size = new System.Drawing.Size(123, 17);
             this.logEarlyCheckBox.TabIndex = 25;
@@ -890,9 +896,9 @@
             this.freqCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.freqCheckBox.Location = new System.Drawing.Point(21, 435);
             this.freqCheckBox.Name = "freqCheckBox";
-            this.freqCheckBox.Size = new System.Drawing.Size(144, 17);
+            this.freqCheckBox.Size = new System.Drawing.Size(133, 17);
             this.freqCheckBox.TabIndex = 31;
-            this.freqCheckBox.Text = "Select best Tx frequency";
+            this.freqCheckBox.Text = "Use best Tx frequency";
             this.freqCheckBox.UseVisualStyleBackColor = true;
             this.freqCheckBox.Visible = false;
             this.freqCheckBox.CheckedChanged += new System.EventHandler(this.freqCheckBox_CheckedChanged);
@@ -923,7 +929,7 @@
             // 
             this.optimizeCheckBox.AutoSize = true;
             this.optimizeCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.optimizeCheckBox.Location = new System.Drawing.Point(167, 417);
+            this.optimizeCheckBox.Location = new System.Drawing.Point(167, 415);
             this.optimizeCheckBox.Name = "optimizeCheckBox";
             this.optimizeCheckBox.Size = new System.Drawing.Size(66, 17);
             this.optimizeCheckBox.TabIndex = 37;
@@ -986,7 +992,7 @@
             // 
             this.replyLocalCheckBox.AutoSize = true;
             this.replyLocalCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.replyLocalCheckBox.Location = new System.Drawing.Point(242, 263);
+            this.replyLocalCheckBox.Location = new System.Drawing.Point(243, 263);
             this.replyLocalCheckBox.Name = "replyLocalCheckBox";
             this.replyLocalCheckBox.Size = new System.Drawing.Size(40, 17);
             this.replyLocalCheckBox.TabIndex = 46;
@@ -999,7 +1005,7 @@
             // 
             this.holdCheckBox.AutoSize = true;
             this.holdCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.holdCheckBox.Location = new System.Drawing.Point(234, 417);
+            this.holdCheckBox.Location = new System.Drawing.Point(234, 415);
             this.holdCheckBox.Name = "holdCheckBox";
             this.holdCheckBox.Size = new System.Drawing.Size(48, 17);
             this.holdCheckBox.TabIndex = 48;
@@ -1014,9 +1020,9 @@
             this.replyNewDxccCheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.replyNewDxccCheckBox.Location = new System.Drawing.Point(20, 326);
             this.replyNewDxccCheckBox.Name = "replyNewDxccCheckBox";
-            this.replyNewDxccCheckBox.Size = new System.Drawing.Size(187, 17);
+            this.replyNewDxccCheckBox.Size = new System.Drawing.Size(188, 17);
             this.replyNewDxccCheckBox.TabIndex = 49;
-            this.replyNewDxccCheckBox.Text = "Reply longer to new \'rare DX\' calls";
+            this.replyNewDxccCheckBox.Text = "Reply to new DXCC (w/ long hold)";
             this.replyNewDxccCheckBox.UseVisualStyleBackColor = true;
             this.replyNewDxccCheckBox.Visible = false;
             this.replyNewDxccCheckBox.CheckedChanged += new System.EventHandler(this.replyNewDxccCheckBox_CheckedChanged);
@@ -1170,34 +1176,34 @@
             // callingLabel
             // 
             this.callingLabel.AutoSize = true;
-            this.callingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.callingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.callingLabel.Location = new System.Drawing.Point(9, 152);
             this.callingLabel.Name = "callingLabel";
-            this.callingLabel.Size = new System.Drawing.Size(41, 13);
+            this.callingLabel.Size = new System.Drawing.Size(94, 13);
             this.callingLabel.TabIndex = 72;
-            this.callingLabel.Text = "Calling:";
+            this.callingLabel.Text = "Calling options:";
             this.callingLabel.Visible = false;
             // 
             // replyingLabel
             // 
             this.replyingLabel.AutoSize = true;
-            this.replyingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.replyingLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.replyingLabel.Location = new System.Drawing.Point(9, 222);
             this.replyingLabel.Name = "replyingLabel";
-            this.replyingLabel.Size = new System.Drawing.Size(51, 13);
+            this.replyingLabel.Size = new System.Drawing.Size(105, 13);
             this.replyingLabel.TabIndex = 73;
-            this.replyingLabel.Text = "Replying:";
+            this.replyingLabel.Text = "Replying options:";
             this.replyingLabel.Visible = false;
             // 
             // optionsLabel
             // 
             this.optionsLabel.AutoSize = true;
-            this.optionsLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.optionsLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.optionsLabel.Location = new System.Drawing.Point(9, 364);
             this.optionsLabel.Name = "optionsLabel";
-            this.optionsLabel.Size = new System.Drawing.Size(46, 13);
+            this.optionsLabel.Size = new System.Drawing.Size(100, 13);
             this.optionsLabel.TabIndex = 74;
-            this.optionsLabel.Text = "Options:";
+            this.optionsLabel.Text = "General options:";
             this.optionsLabel.Visible = false;
             // 
             // replyNormCqLabel
@@ -1305,13 +1311,14 @@
             // 
             this.replyRR73CheckBox.AutoSize = true;
             this.replyRR73CheckBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.replyRR73CheckBox.Location = new System.Drawing.Point(166, 398);
+            this.replyRR73CheckBox.Location = new System.Drawing.Point(166, 397);
             this.replyRR73CheckBox.Name = "replyRR73CheckBox";
             this.replyRR73CheckBox.Size = new System.Drawing.Size(118, 17);
             this.replyRR73CheckBox.TabIndex = 87;
             this.replyRR73CheckBox.Text = "Reply to RR73 msg";
             this.replyRR73CheckBox.UseVisualStyleBackColor = true;
             this.replyRR73CheckBox.Visible = false;
+            this.replyRR73CheckBox.CheckedChanged += new System.EventHandler(this.replyRR73CheckBox_CheckedChanged);
             // 
             // ReplyRR73HelpLabel
             // 
@@ -1319,7 +1326,7 @@
             this.ReplyRR73HelpLabel.BackColor = System.Drawing.SystemColors.Control;
             this.ReplyRR73HelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.ReplyRR73HelpLabel.ForeColor = System.Drawing.Color.Blue;
-            this.ReplyRR73HelpLabel.Location = new System.Drawing.Point(277, 399);
+            this.ReplyRR73HelpLabel.Location = new System.Drawing.Point(277, 398);
             this.ReplyRR73HelpLabel.Name = "ReplyRR73HelpLabel";
             this.ReplyRR73HelpLabel.Size = new System.Drawing.Size(14, 13);
             this.ReplyRR73HelpLabel.TabIndex = 88;
@@ -1333,10 +1340,10 @@
             this.cqOnlyRadioButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cqOnlyRadioButton.Location = new System.Drawing.Point(117, 282);
             this.cqOnlyRadioButton.Name = "cqOnlyRadioButton";
-            this.cqOnlyRadioButton.Size = new System.Drawing.Size(40, 17);
+            this.cqOnlyRadioButton.Size = new System.Drawing.Size(57, 17);
             this.cqOnlyRadioButton.TabIndex = 89;
             this.cqOnlyRadioButton.TabStop = true;
-            this.cqOnlyRadioButton.Text = "CQ";
+            this.cqOnlyRadioButton.Text = "CQ/73";
             this.cqOnlyRadioButton.UseVisualStyleBackColor = true;
             this.cqOnlyRadioButton.Visible = false;
             this.cqOnlyRadioButton.Click += new System.EventHandler(this.cqOnlyRadioButton_Click);
@@ -1345,7 +1352,7 @@
             // 
             this.cqGridRadioButton.AutoSize = true;
             this.cqGridRadioButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.cqGridRadioButton.Location = new System.Drawing.Point(172, 282);
+            this.cqGridRadioButton.Location = new System.Drawing.Point(174, 282);
             this.cqGridRadioButton.Name = "cqGridRadioButton";
             this.cqGridRadioButton.Size = new System.Drawing.Size(62, 17);
             this.cqGridRadioButton.TabIndex = 90;
@@ -1375,16 +1382,16 @@
             this.includeLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.includeLabel.Location = new System.Drawing.Point(31, 283);
             this.includeLabel.Name = "includeLabel";
-            this.includeLabel.Size = new System.Drawing.Size(66, 13);
+            this.includeLabel.Size = new System.Drawing.Size(80, 13);
             this.includeLabel.TabIndex = 92;
-            this.includeLabel.Text = "include msg:";
+            this.includeLabel.Text = "from messages:";
             this.includeLabel.Visible = false;
             // 
             // forLabel
             // 
             this.forLabel.AutoSize = true;
             this.forLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.forLabel.Location = new System.Drawing.Point(182, 264);
+            this.forLabel.Location = new System.Drawing.Point(184, 264);
             this.forLabel.Name = "forLabel";
             this.forLabel.Size = new System.Drawing.Size(19, 13);
             this.forLabel.TabIndex = 93;
@@ -1397,13 +1404,131 @@
             this.bandComboBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.bandComboBox.FormattingEnabled = true;
             this.bandComboBox.Items.AddRange(new object[] {
-            "any band",
+            "for 1 band",
             "on band"});
             this.bandComboBox.Location = new System.Drawing.Point(109, 259);
             this.bandComboBox.Name = "bandComboBox";
-            this.bandComboBox.Size = new System.Drawing.Size(70, 21);
+            this.bandComboBox.Size = new System.Drawing.Size(73, 21);
             this.bandComboBox.TabIndex = 94;
             this.bandComboBox.Visible = false;
+            // 
+            // label31
+            // 
+            this.label31.AutoSize = true;
+            this.label31.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label31.Location = new System.Drawing.Point(96, 709);
+            this.label31.Name = "label31";
+            this.label31.Size = new System.Drawing.Size(34, 12);
+            this.label31.TabIndex = 95;
+            this.label31.Text = "label31";
+            // 
+            // label32
+            // 
+            this.label32.AutoSize = true;
+            this.label32.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label32.Location = new System.Drawing.Point(147, 719);
+            this.label32.Name = "label32";
+            this.label32.Size = new System.Drawing.Size(34, 12);
+            this.label32.TabIndex = 96;
+            this.label32.Text = "label32";
+            // 
+            // label33
+            // 
+            this.label33.AutoSize = true;
+            this.label33.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label33.Location = new System.Drawing.Point(186, 709);
+            this.label33.Name = "label33";
+            this.label33.Size = new System.Drawing.Size(34, 12);
+            this.label33.TabIndex = 97;
+            this.label33.Text = "label33";
+            // 
+            // label34
+            // 
+            this.label34.AutoSize = true;
+            this.label34.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label34.Location = new System.Drawing.Point(147, 729);
+            this.label34.Name = "label34";
+            this.label34.Size = new System.Drawing.Size(34, 12);
+            this.label34.TabIndex = 98;
+            this.label34.Text = "label34";
+            // 
+            // periodComboBox
+            // 
+            this.periodComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.periodComboBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.periodComboBox.FormattingEnabled = true;
+            this.periodComboBox.Items.AddRange(new object[] {
+            "even",
+            "odd",
+            "any"});
+            this.periodComboBox.Location = new System.Drawing.Point(221, 432);
+            this.periodComboBox.Name = "periodComboBox";
+            this.periodComboBox.Size = new System.Drawing.Size(52, 21);
+            this.periodComboBox.TabIndex = 99;
+            this.periodComboBox.Visible = false;
+            this.periodComboBox.SelectedIndexChanged += new System.EventHandler(this.periodComboBox_SelectedIndexChanged);
+            // 
+            // periodLabel
+            // 
+            this.periodLabel.AutoSize = true;
+            this.periodLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.periodLabel.Location = new System.Drawing.Point(164, 436);
+            this.periodLabel.Name = "periodLabel";
+            this.periodLabel.Size = new System.Drawing.Size(54, 13);
+            this.periodLabel.TabIndex = 101;
+            this.periodLabel.Text = "Tx period:";
+            this.periodLabel.Visible = false;
+            // 
+            // PeriodHelpLabel
+            // 
+            this.PeriodHelpLabel.AutoSize = true;
+            this.PeriodHelpLabel.BackColor = System.Drawing.SystemColors.Control;
+            this.PeriodHelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.PeriodHelpLabel.ForeColor = System.Drawing.Color.Blue;
+            this.PeriodHelpLabel.Location = new System.Drawing.Point(277, 436);
+            this.PeriodHelpLabel.Name = "PeriodHelpLabel";
+            this.PeriodHelpLabel.Size = new System.Drawing.Size(14, 13);
+            this.PeriodHelpLabel.TabIndex = 102;
+            this.PeriodHelpLabel.Text = "?";
+            this.PeriodHelpLabel.Visible = false;
+            this.PeriodHelpLabel.Click += new System.EventHandler(this.PeriodHelpLabel_Click);
+            // 
+            // PriorityHelpLabel
+            // 
+            this.PriorityHelpLabel.AutoSize = true;
+            this.PriorityHelpLabel.BackColor = System.Drawing.SystemColors.Control;
+            this.PriorityHelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.PriorityHelpLabel.ForeColor = System.Drawing.Color.Blue;
+            this.PriorityHelpLabel.Location = new System.Drawing.Point(277, 305);
+            this.PriorityHelpLabel.Name = "PriorityHelpLabel";
+            this.PriorityHelpLabel.Size = new System.Drawing.Size(14, 13);
+            this.PriorityHelpLabel.TabIndex = 103;
+            this.PriorityHelpLabel.Text = "?";
+            this.PriorityHelpLabel.Visible = false;
+            this.PriorityHelpLabel.Click += new System.EventHandler(this.PriorityHelpLabel_Click);
+            // 
+            // optionsButton
+            // 
+            this.optionsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.optionsButton.Location = new System.Drawing.Point(122, 658);
+            this.optionsButton.Name = "optionsButton";
+            this.optionsButton.Size = new System.Drawing.Size(112, 25);
+            this.optionsButton.TabIndex = 104;
+            this.optionsButton.Text = "Hide options";
+            this.optionsButton.UseVisualStyleBackColor = true;
+            this.optionsButton.Click += new System.EventHandler(this.optionsButton_Click);
+            // 
+            // guideLabel
+            // 
+            this.guideLabel.AutoSize = true;
+            this.guideLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.guideLabel.ForeColor = System.Drawing.Color.Blue;
+            this.guideLabel.Location = new System.Drawing.Point(171, 533);
+            this.guideLabel.Name = "guideLabel";
+            this.guideLabel.Size = new System.Drawing.Size(115, 15);
+            this.guideLabel.TabIndex = 105;
+            this.guideLabel.Text = "Quick-start setup";
+            this.guideLabel.Click += new System.EventHandler(this.guideLabel_Click);
             // 
             // Controller
             // 
@@ -1411,7 +1536,22 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(301, 785);
+            this.Controls.Add(this.replyNewOnlyCheckBox);
+            this.Controls.Add(this.guideLabel);
+            this.Controls.Add(this.optionsButton);
+            this.Controls.Add(this.freqCheckBox);
+            this.Controls.Add(this.LogEarlyHelpLabel);
+            this.Controls.Add(this.AutoFreqHelpLabel);
+            this.Controls.Add(this.PriorityHelpLabel);
+            this.Controls.Add(this.PeriodHelpLabel);
+            this.Controls.Add(this.periodLabel);
+            this.Controls.Add(this.periodComboBox);
+            this.Controls.Add(this.label34);
+            this.Controls.Add(this.label33);
             this.Controls.Add(this.replyLocalCheckBox);
+            this.Controls.Add(this.ReplyNewHelpLabel);
+            this.Controls.Add(this.label32);
+            this.Controls.Add(this.label31);
             this.Controls.Add(this.replyDxCheckBox);
             this.Controls.Add(this.bandComboBox);
             this.Controls.Add(this.cqOnlyRadioButton);
@@ -1442,7 +1582,6 @@
             this.Controls.Add(this.timeLabel);
             this.Controls.Add(this.stopTextBox);
             this.Controls.Add(this.modeHelpLabel);
-            this.Controls.Add(this.freqCheckBox);
             this.Controls.Add(this.timeoutLabel);
             this.Controls.Add(this.atLabel);
             this.Controls.Add(this.label1);
@@ -1451,7 +1590,6 @@
             this.Controls.Add(this.timeLabel2);
             this.Controls.Add(this.exceptTextBox);
             this.Controls.Add(this.loggedCheckBox);
-            this.Controls.Add(this.ReplyNewHelpLabel);
             this.Controls.Add(this.mycallCheckBox);
             this.Controls.Add(this.LimitTxHelpLabel);
             this.Controls.Add(this.callAddedCheckBox);
@@ -1460,13 +1598,11 @@
             this.Controls.Add(this.replyNewDxccCheckBox);
             this.Controls.Add(this.label26);
             this.Controls.Add(this.holdCheckBox);
-            this.Controls.Add(this.AutoFreqHelpLabel);
             this.Controls.Add(this.StartHelpLabel);
             this.Controls.Add(this.msgTextBox);
             this.Controls.Add(this.optimizeCheckBox);
             this.Controls.Add(this.label25);
             this.Controls.Add(this.label24);
-            this.Controls.Add(this.verLabel3);
             this.Controls.Add(this.directedTextBox);
             this.Controls.Add(this.useRR73CheckBox);
             this.Controls.Add(this.callDirCqCheckBox);
@@ -1514,10 +1650,8 @@
             this.Controls.Add(this.addCallLabel);
             this.Controls.Add(this.IgnoreNonDxHelpLabel);
             this.Controls.Add(this.ignoreNonDxCheckBox);
-            this.Controls.Add(this.LogEarlyHelpLabel);
             this.Controls.Add(this.ReplyRR73HelpLabel);
             this.Controls.Add(this.replyNormCqLabel);
-            this.Controls.Add(this.replyNewOnlyCheckBox);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
@@ -1577,7 +1711,6 @@
         public System.Windows.Forms.Label UseDirectedHelpLabel;
         public System.Windows.Forms.Label AlertDirectedHelpLabel;
         public System.Windows.Forms.Label LogEarlyHelpLabel;
-        public System.Windows.Forms.Label verLabel3;
         public System.Windows.Forms.Label ExcludeHelpLabel;
         public System.Windows.Forms.Label label24;
         public System.Windows.Forms.Label label25;
@@ -1649,6 +1782,16 @@
         private System.Windows.Forms.Label includeLabel;
         private System.Windows.Forms.Label forLabel;
         public System.Windows.Forms.ComboBox bandComboBox;
+        public System.Windows.Forms.Label label31;
+        public System.Windows.Forms.Label label32;
+        public System.Windows.Forms.Label label33;
+        public System.Windows.Forms.Label label34;
+        public System.Windows.Forms.ComboBox periodComboBox;
+        public System.Windows.Forms.Label periodLabel;
+        public System.Windows.Forms.Label PeriodHelpLabel;
+        public System.Windows.Forms.Label PriorityHelpLabel;
+        public System.Windows.Forms.Button optionsButton;
+        private System.Windows.Forms.Label guideLabel;
     }
 }
 

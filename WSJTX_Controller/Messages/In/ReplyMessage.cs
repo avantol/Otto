@@ -62,7 +62,7 @@ namespace WsjtxUdpLib.Messages
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.Append("Reply     ");
+            sb.Append("Reply      ");
             sb.Append($"{Col(SinceMidnight, 8, Align.Left)} ");
             sb.Append($"{Col(Snr, 3, Align.Right)} ");
             sb.Append($"{Col(DeltaFrequency, 4, Align.Right)} ");

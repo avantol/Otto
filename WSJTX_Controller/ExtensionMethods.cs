@@ -19,7 +19,7 @@ namespace WsjtxUdpLib
                 if (sb.Length > 0)
                 {
                     sb.Append(" ");
-                    if ((++n % 6) == 0)
+                    if ((++n % 5) == 0)
                     {
                         sb.Append("\n           ");
                     }

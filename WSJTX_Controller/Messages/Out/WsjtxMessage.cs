@@ -77,6 +77,7 @@ namespace WsjtxUdpLib.Messages.Out
         {
             if (call.Contains("/")) return false;
             if (call.Length > maxBaseCallsignLength) return true;
+            if (IsAlphaOnly(call)) return true;
 
             //count non-consecutive digits (2-4 consecutive digits can be special event call)
             int n = 0;
@@ -318,7 +319,8 @@ namespace WsjtxUdpLib.Messages.Out
             return true;
         }
 
-        public static int Sequence(string msg)
+        //return progress in the FT8 QSO protocol (later msgs higher)
+        public static int Progress(string msg)
         {
             if (IsCQ(msg)) return 1;
             if (IsReply(msg)) return 2;
@@ -435,6 +437,10 @@ namespace WsjtxUdpLib.Messages.Out
             }
 
             string output = o.ToString();
+            if (o is bool)
+            {
+                output = output.Substring(0, 1);
+            }
 
             if (output.Length > chars)
             {

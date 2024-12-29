@@ -24,8 +24,6 @@ namespace WSJTX_Controller
 
         public WsjtxClient wsjtxClient;
         public Controller ctrl;
-        public int pct = 0;
-        private int pctIdx = 0;
 
         private List<int> pcts = new List<int>() { 0, 25, 50 };
 
@@ -34,10 +32,6 @@ namespace WSJTX_Controller
 
             diagLogCheckBox.Visible = false;
             onTopCheckBox.Visible = false;
-            label3.Visible = false;
-            downButton.Visible = false;
-            upButton.Visible = false;
-            pctLabel.Visible = false;
         }
 
         private void CancelButton_Click(object sender, EventArgs e)
@@ -102,11 +96,13 @@ namespace WSJTX_Controller
         {
             ctrl.alwaysOnTop = onTopCheckBox.Checked;
             wsjtxClient.LogModeChanged(diagLogCheckBox.Checked);
-            if (pcts[pctIdx] != pct) ctrl.ResizeForm(pcts[pctIdx]);
         }
 
         private void SetupDlg_Load(object sender, EventArgs e)
         {
+            Screen screen = Screen.FromControl(ctrl);
+            Location = new Point(screen.Bounds.X + ((screen.Bounds.Width - Width) / 2), screen.Bounds.Y + ((screen.Bounds.Height - Height) / 2));
+
             overrideCheckBox.Checked = wsjtxClient.overrideUdpDetect;
             if (wsjtxClient.ipAddress != null) addrTextBox.Text = wsjtxClient.ipAddress.ToString();
             if (wsjtxClient.port != 0) portTextBox.Text = wsjtxClient.port.ToString();
@@ -115,10 +111,6 @@ namespace WSJTX_Controller
             onTopCheckBox.Checked = ctrl.alwaysOnTop;
             diagLogCheckBox.Checked = wsjtxClient.diagLog;
             overrideCheckBox_CheckedChanged(null, null);
-
-            pctIdx = pcts.IndexOf(pct);
-            if (pctIdx < 0) pctIdx = 1;
-            UpdatePctLabel();
         }
 
         private void multicastcheckBox_CheckedChanged(object sender, EventArgs e)
@@ -150,26 +142,6 @@ namespace WSJTX_Controller
         private void overrideCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             addrTextBox.Enabled = portTextBox.Enabled = multicastcheckBox.Enabled = overrideCheckBox.Checked;
-        }
-
-        private void upButton_Click(object sender, EventArgs e)
-        {
-            if (pctIdx < pcts.Count - 1) pctIdx++;
-            UpdatePctLabel();
-        }
-
-        private void downButton_Click(object sender, EventArgs e)
-        {
-
-            if (pctIdx > 0) pctIdx--;
-            UpdatePctLabel();
-        }
-
-        private void UpdatePctLabel()
-        {
-            pctLabel.Text = $"{(pcts[pctIdx] + 100).ToString()}%";
-            upButton.Enabled = pctIdx < pcts.Count - 1;
-            downButton.Enabled = pctIdx > 0;
         }
 
         private void SetupDlg_FormClosed(object sender, FormClosedEventArgs e)

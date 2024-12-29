@@ -23,6 +23,7 @@ namespace WSJTX_Controller
     public partial class Controller : Form
     {
         public WsjtxClient wsjtxClient;
+        private Guide guide;
         public bool alwaysOnTop = false;
         public bool firstRun = true;        //first run for each user level
         public bool skipLevelPrompt = false;
@@ -33,25 +34,32 @@ namespace WSJTX_Controller
         private bool formLoaded = false;
         private SetupDlg setupDlg = null;
         private IniFile iniFile = null;
-        private int minSkipCount = 1;
-        private int maxSkipCount = 20;
+        private const int minSkipCount = 1;
+        private const int maxSkipCount = 20;
         private const string separateBySpaces = "(separate by spaces)";
-        private List<Control> ctrls = new List<Control>();
-        private int windowSizePctIncr = 0;
-        bool confirmWindowSize = false;
         private bool showCloseMsgs = true;
         public string friendlyName = "";
         private MouseEventArgs mouseEventArgs;
         private int listBoxClickCount;
+        private bool ignoreDirectedChange = false;
+        private bool showOptions = false;
+        private Control[] movableCtrls;
+        private int[] movableCtrlYs;
+        private List<Control> hideCtrls;
+        private int optionsOffset;
+        private string helpSuffix = " Help";
 
-        private System.Windows.Forms.Timer mainLoopTimer;
+    private System.Windows.Forms.Timer mainLoopTimer;
 
         public System.Windows.Forms.Timer statusMsgTimer;
         public System.Windows.Forms.Timer initialConnFaultTimer;
         public System.Windows.Forms.Timer debugHighlightTimer;
-        public System.Windows.Forms.Timer confirmTimer;
         public System.Windows.Forms.Timer setupTimer;
+        public System.Windows.Forms.Timer guideTimer;
         public System.Windows.Forms.Timer callListBoxClickTimer;
+        public System.Windows.Forms.Timer dirCqTimer;
+
+        private string nl = Environment.NewLine;
 
         public Controller()
         {
@@ -69,17 +77,51 @@ namespace WSJTX_Controller
             initialConnFaultTimer.Tick += new System.EventHandler(initialConnFaultTimer_Tick);
             debugHighlightTimer = new System.Windows.Forms.Timer();
             debugHighlightTimer.Tick += new System.EventHandler(debugHighlightTimer_Tick);
-            confirmTimer = new System.Windows.Forms.Timer();
-            confirmTimer.Interval = 2000;
-            confirmTimer.Tick += new System.EventHandler(confirmTimer_Tick);
             setupTimer = new System.Windows.Forms.Timer();
             setupTimer.Interval = 20;
             setupTimer.Tick += new System.EventHandler(setupTimer_Tick);
+            guideTimer = new System.Windows.Forms.Timer();
+            guideTimer.Interval = 20;
+            guideTimer.Tick += new System.EventHandler(guideTimer_Tick);
             callListBoxClickTimer = new System.Windows.Forms.Timer();
             callListBoxClickTimer.Interval = 250;
             callListBoxClickTimer.Tick += new System.EventHandler(callListBoxClickTimer_Tick);
+            dirCqTimer = new System.Windows.Forms.Timer();
+            dirCqTimer.Interval = 2000;
+            dirCqTimer.Tick += new System.EventHandler(dirCqTimer_Tick);
 
-            SystemEvents.UserPreferenceChanged += new UserPreferenceChangedEventHandler(SystemEvents_UserPreferenceChanged);
+            optionsOffset = modeGroupBox.Location.Y - (callListBox.Location.Y + callListBox.Size.Height) - 10;
+            movableCtrls = new Control[9] 
+                {optionsButton,
+                setupButton,
+                modeGroupBox,
+                guideLabel,
+                msgTextBox,
+                statusText,
+                verLabel,
+                verLabel2,
+                modeHelpLabel};
+
+            movableCtrlYs = new int[9];
+            for (int i = 0; i < movableCtrlYs.Length; i++)
+            {
+                movableCtrlYs[i] = movableCtrls[i].Location.Y;
+            }
+
+
+            hideCtrls = new List<Control>();
+            Rectangle rect = new Rectangle(
+                0,
+                callListBox.Location.Y + callListBox.Height + 10,
+                Width,
+                optionsButton.Location.Y + optionsButton.Height - modeGroupBox.Location.Y + 8);
+
+            foreach (Control control in Controls) { 
+                if (control.Bounds.IntersectsWith(rect))
+                {
+                    hideCtrls.Add(control);
+                }
+            }
         }
 
 #if DEBUG
@@ -92,8 +134,6 @@ namespace WSJTX_Controller
 #endif
         private void Form_Load(object sender, EventArgs e)
         {
-            SuspendLayout();
-
             //use .ini file for settings (avoid .Net config file mess)
             string pgmName = Assembly.GetExecutingAssembly().GetName().Name.ToString();
             string path = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\{pgmName}";
@@ -105,7 +145,7 @@ namespace WSJTX_Controller
             }
             catch
             {
-                MessageBox.Show("Unable to create settings file: " + pathFileNameExt + "\n\nContinuing with default settings...", friendlyName, MessageBoxButtons.OK);
+                MessageBox.Show("Unable to create settings file: " + pathFileNameExt + $"{nl}Continuing with default settings...", friendlyName, MessageBoxButtons.OK);
             }
 
             string ipAddress = null;            //flag as invalid
@@ -122,9 +162,11 @@ namespace WSJTX_Controller
             bool useRR73 = false;
             bool mode = false;
             string myContinent = null;
-            modeComboBox.SelectedIndex = 0;
-            int rankMethodIdx = 0;
 
+            //control defaults
+            modeComboBox.SelectedIndex = 0;
+            periodComboBox.SelectedIndex = 2;
+            int rankMethodIdx = (int)WsjtxClient.RankMethods.CALL_ORDER;
             freqCheckBox.Checked = false;
             timedCheckBox.Checked = false;           //not saved
 
@@ -132,8 +174,10 @@ namespace WSJTX_Controller
             {
                 firstRun = Properties.Settings.Default.firstRun;
                 debug = Properties.Settings.Default.debug;
-                if (Properties.Settings.Default.windowPos != new Point(0, 0)) this.Location = Properties.Settings.Default.windowPos;
-                if (Properties.Settings.Default.windowHt != 0) this.Height = Properties.Settings.Default.windowHt;
+                if (Properties.Settings.Default.windowPos != new Point(0, 0)) 
+                    this.Location = Properties.Settings.Default.windowPos;
+                if (Properties.Settings.Default.windowHt != 0) 
+                    this.Height = Properties.Settings.Default.windowHt;
                 ipAddress = Properties.Settings.Default.ipAddress;
                 port = Properties.Settings.Default.port;
                 multicast = Properties.Settings.Default.multicast;
@@ -156,14 +200,18 @@ namespace WSJTX_Controller
                 firstRun = iniFile.Read("firstRun") == "True";
                 debug = iniFile.Read("debug") == "True";
 
-                int x = Math.Max(Convert.ToInt32(iniFile.Read("windowPosX")), 0);
-                int y = Math.Max(Convert.ToInt32(iniFile.Read("windowPosY")), 0);
+                int x;
+                int.TryParse(iniFile.Read("windowPosX"), out x);
+                int y;
+                int.TryParse(iniFile.Read("windowPosY"), out y);
                 //check all screens, extended screen may not be present
                 var screens = System.Windows.Forms.Screen.AllScreens;
                 bool found = false;
                 for (int scnIdx = 0; scnIdx < screens.Length; scnIdx++)
                 {
-                    if (screens[scnIdx].Bounds.Contains(new Point(x + (Bounds.Width / 2), y + (Bounds.Height / 2))))
+                    var screenBounds = screens[scnIdx].Bounds;
+                    var formRect = new Rectangle(new Point(x + screenBounds.Location.X, y + screenBounds.Location.Y), this.Bounds.Size);
+                    if (screenBounds.IntersectsWith(formRect))
                     {
                         found = true;       //found screen for window posn
                         break;
@@ -175,17 +223,20 @@ namespace WSJTX_Controller
                     y = 0;
                 }
                 this.Location = new Point(x, y);
-                this.Height = Convert.ToInt32(iniFile.Read("windowHt"));
+                int i;
+                int.TryParse(iniFile.Read("windowHt"), out i);
+                this.Height = i;
 
                 ipAddress = iniFile.Read("ipAddress");
-                port = Convert.ToInt32(iniFile.Read("port"));
+                int.TryParse(iniFile.Read("port"), out port);
                 multicast = iniFile.Read("multicast") == "True";
-                timeoutNumUpDown.Value = Convert.ToInt32(iniFile.Read("timeout"));
+                int.TryParse(iniFile.Read("timeout"), out i);
+                timeoutNumUpDown.Value = i;
                 directedTextBox.Text = iniFile.Read("directeds");
                 callDirCqCheckBox.Checked = iniFile.Read("useDirected") == "True";
-                mycallCheckBox.Checked = iniFile.Read("playMyCall") == "True";
-                loggedCheckBox.Checked = iniFile.Read("playLogged") == "True";
-                callAddedCheckBox.Checked = iniFile.Read("playCallAdded") == "True";
+                mycallCheckBox.Checked = iniFile.Read("playMyCall") != "False";
+                loggedCheckBox.Checked = iniFile.Read("playLogged") != "False";
+                callAddedCheckBox.Checked = iniFile.Read("playCallAdded") != "False";
                 alertTextBox.Text = iniFile.Read("alertDirecteds");
                 replyDirCqCheckBox.Checked = iniFile.Read("useAlertDirected") == "True";
                 logEarlyCheckBox.Checked = iniFile.Read("logEarly") == "True";
@@ -203,10 +254,14 @@ namespace WSJTX_Controller
                 freqCheckBox.Checked = iniFile.Read("bestOffset") == "True";
                 if (iniFile.KeyExists("stopTxTime")) stopTextBox.Text = iniFile.Read("stopTxTime");
                 if (iniFile.KeyExists("startTxTime")) startTextBox.Text = iniFile.Read("startTxTime");
-                if (iniFile.KeyExists("timedOperationIdx")) modeComboBox.SelectedIndex = Convert.ToInt32(iniFile.Read("timedOperationIdx"));
-                if (iniFile.KeyExists("offsetHiLimit")) offsetHiLimit = Convert.ToInt32(iniFile.Read("offsetHiLimit"));
-                if (iniFile.KeyExists("offsetLoLimit")) offsetLoLimit = Convert.ToInt32(iniFile.Read("offsetLoLimit"));
-                replyLocalCheckBox.Checked = iniFile.Read("enableReplyLocal") == "True";
+                if (iniFile.KeyExists("timedOperationIdx"))
+                {
+                    int.TryParse(iniFile.Read("timedOperationIdx"), out i);
+                    modeComboBox.SelectedIndex = i;
+                }
+                if (iniFile.KeyExists("offsetHiLimit")) int.TryParse(iniFile.Read("offsetHiLimit"), out offsetHiLimit);
+                if (iniFile.KeyExists("offsetLoLimit")) int.TryParse(iniFile.Read("offsetLoLimit"), out offsetLoLimit);
+                replyLocalCheckBox.Checked = iniFile.Read("enableReplyLocal") != "False";     //default
                 optimizeCheckBox.Checked = iniFile.Read("optimizeTx") == "True";
                 exceptTextBox.Text = iniFile.Read("exceptCalls");
                 replyNewOnlyCheckBox.Checked = iniFile.Read("replyOnlyDxcc") == "True";
@@ -215,19 +270,23 @@ namespace WSJTX_Controller
                 callNonDirCqCheckBox.Checked = iniFile.Read("callNonDirCq") == "True";
                 overrideUdpDetect = iniFile.Read("overrideUdpDetect") == "True";
                 skipLevelPrompt = iniFile.Read("skipLevelPrompt") == "True";
-                if (iniFile.KeyExists("windowSizePctIncr")) windowSizePctIncr = Convert.ToInt32(iniFile.Read("windowSizePctIncr"));
-                confirmWindowSize = iniFile.Read("confirmWindowSize") == "True";
                 cqOnlyRadioButton.Checked = iniFile.Read("cqOnly") != "False";              //default: true
                 bool newOnBand = iniFile.Read("newOnBand") != "False";      //default: true
                 bandComboBox.SelectedIndex = newOnBand ? 1 : 0;
                 if (iniFile.KeyExists("myContinent")) myContinent = iniFile.Read("myContinent");    //required to be null if not set
-                if (iniFile.KeyExists("rankMethod")) rankMethodIdx = Convert.ToInt32(iniFile.Read("rankMethod"));
+                if (iniFile.KeyExists("rankMethod")) int.TryParse(iniFile.Read("rankMethod"), out rankMethodIdx);
                 cqGridRadioButton.Checked = iniFile.Read("cqGrid") == "True";
                 anyMsgRadioButton.Checked = iniFile.Read("anyMsg") == "True";
+                if (iniFile.KeyExists("txPeriodIdx"))
+                {
+                    int.TryParse(iniFile.Read("txPeriodIdx"), out i);
+                    periodComboBox.SelectedIndex = i;
+                }
 
                 replyRR73CheckBox.Checked = iniFile.Read("replyRR73") == "True";
                 //read-only
                 offsetTune = iniFile.Read("offsetTune") == "True";
+                showOptions = iniFile.Read("showOptions") == "True";
             }
 
             txMode = mode ? WsjtxClient.TxModes.LISTEN : WsjtxClient.TxModes.CALL_CQ;
@@ -277,6 +336,7 @@ namespace WSJTX_Controller
             callCqDxCheckBox_CheckedChanged(null, null);
             callNonDirCqCheckBox_CheckedChanged(null, null);
             directedTextBox_Leave(null, null);
+            if (!cqOnlyRadioButton.Checked && !cqGridRadioButton.Checked && !anyMsgRadioButton.Checked) cqOnlyRadioButton.Checked = true;
             UpdateCqNewOnBand();
 
 #if DEBUG
@@ -295,7 +355,6 @@ namespace WSJTX_Controller
             wsjtxClient.showTxModes = showTxModes;
             wsjtxClient.myContinent = myContinent;
             if (myContinent != null) replyLocalCheckBox.Text = myContinent;
-            UpdateMinSkipCount();
             if (offsetLoLimit > 0) wsjtxClient.offsetLoLimit = offsetLoLimit;
             if (offsetHiLimit > 0) wsjtxClient.offsetHiLimit = offsetHiLimit;
             wsjtxClient.useRR73 = useRR73;
@@ -311,20 +370,10 @@ namespace WSJTX_Controller
             }
             TopMost = alwaysOnTop;
 
-            if (confirmWindowSize) confirmTimer.Start();
-
             UpdateDebug();
-
-            //save font details because setting form size also resets fonts for all controls
-            foreach (Control control in Controls)
-            {
-                ctrls.Add(control);
-            }
-            RescaleForm();
 
             wsjtxClient.UpdateModeSelection();
 
-            ResumeLayout();
             formLoaded = true;
             updateReplyNewOnlyCheckBoxEnabled();
         }
@@ -345,7 +394,9 @@ namespace WSJTX_Controller
                 {
                     if (!wsjtxClient.advanced && wsjtxClient.ConnectedToWsjtx())
                     {
-                        if (MessageBox.Show($"If you're familiar with the basic operation of this program now, you'll probably be interested in more options.{Environment.NewLine}{Environment.NewLine}Do you want to see all options the next time you run this program?{Environment.NewLine}{Environment.NewLine}(You can make this choice later)", wsjtxClient.pgmName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                        if (MessageBox.Show($"If you're familiar with the basic operation of this program now, you'll probably be interested in more options." +
+                            $"{nl}{nl}Do you want to see all options the next time you run this program?" +
+                            $"{nl}{nl}(You can make this choice later)", wsjtxClient.pgmName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                         {
                             wsjtxClient.advanced = true;
                             firstRun = true;
@@ -355,7 +406,10 @@ namespace WSJTX_Controller
                     {
                         if (!wsjtxClient.showTxModes && wsjtxClient.ConnectedToWsjtx())
                         {
-                            if (MessageBox.Show($"If you're familiar with using some of the options in this program now, you'll probably be interested in the 'Listen for calls' option.{Environment.NewLine}{Environment.NewLine}This causes much less traffic on the band than CQing, by waiting to reply until the calls you want are detected.{Environment.NewLine}{Environment.NewLine}Do you want to see this useful option the next time you run this program?{Environment.NewLine}{Environment.NewLine}(You can make this choice later)", wsjtxClient.pgmName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                            if (MessageBox.Show($"If you're familiar with using some of the options in this program now, you'll probably be interested in the 'Listen for calls' option." +
+                                $"{nl}{nl}This causes much less traffic on the band than CQing, by waiting to reply until the calls you want are detected." +
+                                $"{nl}{nl}Do you want to see this useful option the next time you run this program?" +
+                                $"{nl}{nl}(You can make this choice later)", wsjtxClient.pgmName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                             {
                                 wsjtxClient.showTxModes = true;
                                 firstRun = true;
@@ -369,8 +423,8 @@ namespace WSJTX_Controller
             if (iniFile != null)
             {
                 iniFile.Write("debug", wsjtxClient.debug.ToString());
-                iniFile.Write("windowPosX", (Math.Max(this.Location.X, 0)).ToString());
-                iniFile.Write("windowPosY", (Math.Max(this.Location.Y, 0)).ToString());
+                iniFile.Write("windowPosX", this.Location.X.ToString());
+                iniFile.Write("windowPosY", this.Location.Y.ToString());
                 iniFile.Write("windowHt", this.Height.ToString());
                 if (wsjtxClient.ipAddress != null) iniFile.Write("ipAddress", wsjtxClient.ipAddress.ToString());   //string
                 if (wsjtxClient.port != 0) iniFile.Write("port", wsjtxClient.port.ToString());
@@ -411,8 +465,6 @@ namespace WSJTX_Controller
                 iniFile.Write("callNonDirCq", callNonDirCqCheckBox.Checked.ToString());
                 iniFile.Write("overrideUdpDetect", wsjtxClient.overrideUdpDetect.ToString());
                 iniFile.Write("skipLevelPrompt", skipLevelPrompt.ToString());
-                iniFile.Write("windowSizePctIncr", windowSizePctIncr.ToString());
-                iniFile.Write("confirmWindowSize", confirmWindowSize.ToString());
                 iniFile.Write("cqOnly", cqOnlyRadioButton.Checked.ToString());
                 iniFile.Write("newOnBand", (bandComboBox.SelectedIndex == 1).ToString());
                 iniFile.Write("myContinent", wsjtxClient.myContinent);
@@ -420,11 +472,12 @@ namespace WSJTX_Controller
                 iniFile.Write("replyRR73", replyRR73CheckBox.Checked.ToString());
                 iniFile.Write("cqGrid", cqGridRadioButton.Checked.ToString());
                 iniFile.Write("anyMsg", anyMsgRadioButton.Checked.ToString());
+                iniFile.Write("txPeriodIdx", periodComboBox.SelectedIndex.ToString());
+                iniFile.Write("showOptions", showOptions.ToString());
             }
 
             CloseComm();
-
-            SystemEvents.UserPreferenceChanged -= new UserPreferenceChangedEventHandler(SystemEvents_UserPreferenceChanged);
+            if (guide != null) guide.Close();
         }
 
         public void CloseComm()
@@ -433,7 +486,6 @@ namespace WSJTX_Controller
             mainLoopTimer = null;
             statusMsgTimer.Stop();
             initialConnFaultTimer.Stop();
-            confirmTimer.Stop();
             wsjtxClient.Closing();
         }
 
@@ -507,36 +559,17 @@ namespace WSJTX_Controller
 
             if (timeoutNumUpDown.Value < minSkipCount)
             {
-                Console.Beep();
                 timeoutNumUpDown.Value = minSkipCount;
             }
 
             if (timeoutNumUpDown.Value > maxSkipCount)
             {
-                Console.Beep();
                 timeoutNumUpDown.Value = maxSkipCount;
-
             }
             UpdateTxLabel();
 
             wsjtxClient.TxRepeatChanged();
-        }
-
-        public void UpdateMinSkipCount()
-        {
-            if (wsjtxClient != null && wsjtxClient.showTxModes && cqModeButton.Checked)
-            {
-                minSkipCount = 1;
-            }
-            else
-            {
-                minSkipCount = 2;
-            }
-
-            if (timeoutNumUpDown.Value < minSkipCount)
-            {
-                timeoutNumUpDown.Value = minSkipCount;
-            }
+            if (guide != null) guide.UpdateView();
         }
 
         private void UpdateTxLabel()
@@ -547,7 +580,7 @@ namespace WSJTX_Controller
             }
             else
             {
-                repeatLabel.Text = "repeat Tx";
+                repeatLabel.Text = "repeated Tx";
             }
         }
 
@@ -568,32 +601,8 @@ namespace WSJTX_Controller
                 alertTextBox.ForeColor = System.Drawing.Color.Black;
             }
             if (!replyDirCqCheckBox.Checked && alertTextBox.Text == "") alertTextBox.Text = separateBySpaces;
-        }
 
-        private void callDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (!formLoaded) return;
-
-            directedTextBox.Enabled = callDirCqCheckBox.Checked;
-            if (callDirCqCheckBox.Checked && directedTextBox.Text == separateBySpaces)
-            {
-                directedTextBox.Clear();
-                directedTextBox.ForeColor = System.Drawing.Color.Black;
-            }
-            if (!callDirCqCheckBox.Checked && directedTextBox.Text == "") directedTextBox.Text = separateBySpaces;
-
-            if (callDirCqCheckBox.Checked)
-            {
-                if (callCqDxCheckBox.Checked) ignoreNonDxCheckBox.Checked = false;
-            }
-            else
-            {
-                if (!callCqDxCheckBox.Checked)
-                {
-                    callNonDirCqCheckBox.Checked = true;
-                }
-            }
-            wsjtxClient.WsjtxSettingChanged();              //resets CQ to not directed
+            if (guide != null) guide.UpdateView();
         }
 
         private void replyNewDxccCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -613,6 +622,8 @@ namespace WSJTX_Controller
             if (!replyNewDxccCheckBox.Checked && exceptTextBox.Text == "") exceptTextBox.Text = separateBySpaces;
 
             CheckManualSelection();
+
+            if (guide != null) guide.UpdateView();
         }
 
         private void loggedCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -629,7 +640,7 @@ namespace WSJTX_Controller
         {
             if (!formLoaded) return;
 
-            if (!wsjtxClient.advanced) return;
+            if (!wsjtxClient.advanced || !showOptions) return;
             wsjtxClient.debug = !wsjtxClient.debug;
             UpdateDebug();
             if (formLoaded) wsjtxClient.DebugChanged();
@@ -637,6 +648,8 @@ namespace WSJTX_Controller
 
         private void UpdateDebug()
         {
+            SuspendLayout();
+            FormBorderStyle = FormBorderStyle.FixedSingle;
             if (wsjtxClient.debug)
             {
 #if DEBUG
@@ -644,7 +657,6 @@ namespace WSJTX_Controller
                 ShowWindow(GetConsoleWindow(), 5);
 #endif
                 Height = this.MaximumSize.Height;
-                FormBorderStyle = FormBorderStyle.Fixed3D;
                 wsjtxClient.UpdateDebug();
                 BringToFront();
             }
@@ -652,7 +664,14 @@ namespace WSJTX_Controller
             {
                 if (wsjtxClient.advanced)
                 {
-                    Height = (int)(this.MaximumSize.Height * 0.886);
+                    if (!showOptions)
+                    {
+                        UpdateShowOptions();       //otherwise don't move controls
+                    }
+                    else
+                    {
+                        Height = setupButton.Location.Y + setupButton.Height + 45;
+                    }
                 }
                 else
                 {
@@ -660,7 +679,6 @@ namespace WSJTX_Controller
                     setupButton.Location = new Point(setupButton.Location.X, 308);
                     verLabel.Location = new Point(verLabel.Location.X, 309);
                     verLabel2.Location = new Point(verLabel2.Location.X, 323);
-                    verLabel3.Location = new Point(verLabel3.Location.X, 323);
                     msgTextBox.Location = new Point(msgTextBox.Location.X, 260);
                     inProgTextBox.Location = new Point(inProgTextBox.Location.X, 225);
                     inProgLabel.Location = new Point(inProgLabel.Location.X, 207);
@@ -674,13 +692,14 @@ namespace WSJTX_Controller
                     mycallCheckBox.Location = new Point(mycallCheckBox.Location.X, 182);
                     loggedCheckBox.Location = new Point(loggedCheckBox.Location.X, 182);
 
-                    Height = (int)(this.MaximumSize.Height * 0.46);
+                    //Height = (int)(this.MaximumSize.Height * 0.46);
+                    Height = setupButton.Location.Y + setupButton.Height + 45;
                 }
-                FormBorderStyle = FormBorderStyle.FixedSingle;
 #if DEBUG
                 ShowWindow(GetConsoleWindow(), 0);
 #endif
             }
+            ResumeLayout();
         }
 
         private void UpdateAdvancedCtrls()
@@ -698,6 +717,7 @@ namespace WSJTX_Controller
             UseDirectedHelpLabel.Visible = true;
             AlertDirectedHelpLabel.Visible = true;
             LogEarlyHelpLabel.Visible = true;
+            PriorityHelpLabel.Visible = true;
             replyNormCqLabel.Visible = true;
             replyDxCheckBox.Visible = true;
             replyLocalCheckBox.Visible = true;
@@ -705,6 +725,8 @@ namespace WSJTX_Controller
             AutoFreqHelpLabel.Visible = true;
             ReplyNewHelpLabel.Visible = true;
             StartHelpLabel.Visible = true;
+            LimitTxHelpLabel.Visible = true;
+            PeriodHelpLabel.Visible = true;
             freqCheckBox.Visible = true;
             startLabel.Visible = true;
             stopTextBox.Visible = true;
@@ -734,6 +756,7 @@ namespace WSJTX_Controller
             bandComboBox.Visible = true;
             includeLabel.Visible = true;
             rankComboBox.Visible = true;
+            guideLabel.Visible = true;
 
             wsjtxClient.advanced = true;
             wsjtxClient.UpdateModeVisible();
@@ -768,7 +791,6 @@ namespace WSJTX_Controller
         public void setupButton_Click(object sender, EventArgs e)
         {
             initialConnFaultTimer.Stop();
-            confirmTimer.Stop();
 
             if (setupDlg != null)
             {
@@ -786,7 +808,6 @@ namespace WSJTX_Controller
             setupDlg = new SetupDlg();
             setupDlg.wsjtxClient = wsjtxClient;
             setupDlg.ctrl = this;
-            setupDlg.pct = windowSizePctIncr;
             if ((bool)setupTimer.Tag) setupDlg.ShowUdpOnly();
             setupDlg.Show();
         }
@@ -799,9 +820,62 @@ namespace WSJTX_Controller
             wsjtxClient.suspendComm = false;
         }
 
+
+        public void guideLabel_Click(object sender, EventArgs e)
+        {
+            initialConnFaultTimer.Stop();
+
+            if (guide != null)
+            {
+                guide.BringToFront();
+                return;
+            }
+
+            //guideTimer.Tag = e == null;
+            guideTimer.Start();
+        }
+
+        private void guideTimer_Tick(object sender, EventArgs e)
+        {
+            guideTimer.Stop();
+            guide = new Guide(wsjtxClient, this);
+            //if ((bool)guideTimer.Tag) ;
+            guide.Show();
+        }
+
+        public void GuideClosed()
+        {
+            initialConnFaultTimer.Start();
+            guide = null;
+        }
+
         private void addCallLabel_Click(object sender, EventArgs e)
         {
-            ShowHelp($"Calls are replied to in order of importance:{Environment.NewLine}- New countries on any band*{Environment.NewLine}- New countries on current band*{Environment.NewLine}- Calls directed to {MyCall()}*{Environment.NewLine}- Calls you select manually*{Environment.NewLine}- CQs matching 'Reply to directed CQs'*{Environment.NewLine}- Calls matching 'Reply to new calls', ranked by the selected 'Reply priority'.{Environment.NewLine}{Environment.NewLine}(*ranked in the order received, within each type){Environment.NewLine}{Environment.NewLine}To manually add more call signs to the reply list:{Environment.NewLine}- Press and hold the 'Alt' key, then{Environment.NewLine}- Double-click on the line containing the desired 'from' call sign in the WSJT-X 'Band Activity' list.{Environment.NewLine}{Environment.NewLine}To remove a call sign from the reply list:{Environment.NewLine}- Right-click on the call, then confirm.{Environment.NewLine}{Environment.NewLine}To reply to any call from the reply list:{Environment.NewLine}- Double-click on the call.{Environment.NewLine}{Environment.NewLine}To cancel the current call when the reply list is empty:{Environment.NewLine}- Double-click on the reply list box.{Environment.NewLine}{Environment.NewLine}When you double-click on a call in the WSJT-X 'Band Activity list *without* using the 'Alt' key:{Environment.NewLine}- This causes an immediate reply, instead of placing the call on a list of calls to reply to.{Environment.NewLine}- Automatic operation continues after this call is processed.{Environment.NewLine}{Environment.NewLine}Note:{Environment.NewLine}- Unless 'Reply priority' is set to 'order received', lower-priority calls on the reply list are continuously replaced by higher-priority calls.{Environment.NewLine}- If 'Reply priority' is set to 'Best for ... beam', calls that are off the nominal azimuth by more than {wsjtxClient.beamWidth / 2} degrees are not added to the reply list.{Environment.NewLine}- '*' denotes a call from a new country.{Environment.NewLine}{Environment.NewLine}You can leave this dialog open while you try out these hints.");
+            ShowHelp($"Calls are replied to in order of importance:" +
+                $"{nl}- New countries on any band*" +
+                $"{nl}- New countries on current band*" +
+                $"{nl}- Calls directed to {MyCall()}*" +
+                $"{nl}- Calls you select manually*" +
+                $"{nl}- CQs matching 'Reply to directed CQs'*" +
+                $"{nl}- Calls matching 'Reply to new calls', ranked by the selected 'Reply priority'." +
+                $"{nl}{nl}(*ranked in the order received, within each type)" +
+                $"{nl}{nl}To manually add more call signs to the reply list:" +
+                $"{nl}- Press and hold the 'Alt' key, then" +
+                $"{nl}- Double-click on the line containing the desired 'from' call sign in the WSJT-X 'Band Activity' list." +
+                $"{nl}{nl}To remove a call sign from the reply list:" +
+                $"{nl}- Right-click on the call, then confirm." +
+                $"{nl}{nl}To reply to any call from the reply list:" +
+                $"{nl}- Double-click on the call." +
+                $"{nl}{nl}To cancel the current call when the reply list is empty:" +
+                $"{nl}- Double-click on the reply list box." +
+                $"{nl}{nl}When you double-click on a call in the WSJT-X 'Band Activity list *without* using the 'Alt' key:" +
+                $"{nl}- This causes an immediate reply, instead of placing the call on a list of calls to reply to." +
+                $"{nl}- Automatic operation continues after this call is processed." +
+                $"{nl}{nl}Note:" +
+                $"{nl}- Unless 'Reply priority' is set to 'order received', lower-priority calls on the reply list are continuously replaced by higher-priority calls." +
+                $"{nl}- If 'Reply priority' is set to 'Best for ... beam', calls that are off the nominal azimuth by more than {wsjtxClient.beamWidth / 2} degrees are not added to the reply list." +
+                $"{nl}- '*' denotes a call from a new country." +
+                $"{nl}{nl}You can leave this dialog open while you try out these hints.");
         }
 
         public void ShowMsg(string text, bool sound)
@@ -818,32 +892,50 @@ namespace WSJTX_Controller
 
         private void IncludeHelpLabel_Click(object sender, EventArgs e)
         {
-            ShowHelp($"This section allows you to choose which messages from new callers you want to add to the reply list.{Environment.NewLine}{Environment.NewLine}- Select 'CQ' if you want to reply only to CQ messages.{Environment.NewLine}- Select 'CQ/grid' if you want to reply only to messages with grid information, allowing you to prioritize calls based on distance or azimuth.{Environment.NewLine}- Select 'any' to reply to any message.{Environment.NewLine}{Environment.NewLine}Note: The selections here don't affect replies to 'new countries' or 'new countries on band', which are enabled when 'Reply longer to new rare DX calls' is selected.");
+            ShowHelp($"The 'Reply to new calls' section allows you to choose which messages from new callers you want to add to the reply list." +
+                $"{nl}{nl}- Select 'CQ' if you want to reply only to CQ messages." +
+                $"{nl}- Select 'CQ/grid' if you want to reply only to messages with grid information, allowing you to prioritize calls based on distance or azimuth." +
+                $"{nl}- Select 'any' to reply to any message." +
+                $"{nl}{nl}Note: The selections here don't affect replies to 'new countries' or 'new countries on band', which are enabled when 'Reply to new DXCC' is selected.");
         }
 
         private void IgnoreNonDxHelpLabel_Click(object sender, EventArgs e)
         {
-            ShowHelp($"When calling 'CQ DX', select 'Ignore non-DX reply' to disable replying to calls to {MyCall()} from continents other than your continent.{Environment.NewLine}{Environment.NewLine}This also disables replies to calls not directed to {MyCall()}.");
+            ShowHelp($"When calling 'CQ DX', select 'Ignore non-DX reply' to disable replying to calls to {MyCall()} from continents other than your continent." +
+                $"{nl}{nl}This also disables replies to calls not directed to {MyCall()}.");
         }
 
         private void UseDirectedHelpLabel_Click(object sender, EventArgs e)
         {
-            ShowHelp($"To send directed CQs:{Environment.NewLine}- Enter the code(s) for the directed CQs you want to transmit (2 to 4 letters each), separated by spaces.{Environment.NewLine}- Don't enter 'DX' here.{Environment.NewLine}{Environment.NewLine}The directed CQs will be used in random order.{Environment.NewLine}{Environment.NewLine}Example: EU SA OC");
+            ShowHelp($"To send directed CQs:{nl}" +
+                $"- Enter the code(s) for the directed CQs you want to transmit (2 to 4 letters each), separated by spaces." +
+                $"{nl}- Don't enter 'DX' here." +
+                $"{nl}{nl}The directed CQs will be used in random order." +
+                $"{nl}{nl}Example: EU SA OC");
         }
 
         private void AlertDirectedHelpLabel_Click(object sender, EventArgs e)
         {
-            ShowHelp($"To reply to specific directed CQs from callers you haven't worked yet:{Environment.NewLine}- Enter the code(s) for the directed CQs (2 to 4 letters each), separated by spaces.{Environment.NewLine}{Environment.NewLine}Example: DX POTA NA USA WY{Environment.NewLine}{Environment.NewLine}If you specify 'DX', there will be no reply if the caller is on your continent.{Environment.NewLine}{Environment.NewLine}(Note: 'CQ POTA' or 'CQ SOTA' is an exception to the 'already worked' rule, these calls will cause an auto-reply if you haven't already logged that call in the current mode/band in the current day).");
+            ShowHelp($"To reply to specific directed CQs from callers you haven't worked yet:" +
+                $"{nl}- Enter the code(s) for the directed CQs (2 to 4 letters each), separated by spaces." +
+                $"{nl}{nl}Example: DX POTA NA USA WY" +
+                $"{nl}{nl}If you specify 'DX', there will be no reply if the caller is on your continent." +
+                $"{nl}{nl}(Note: 'CQ POTA' or 'CQ SOTA' is an exception to the 'already worked' rule, these calls will cause an auto-reply if you haven't already logged that call in the current mode/band in the current day).");
         }
 
         private void LogEarlyHelpLabel_Click(object sender, EventArgs e)
         {
-            ShowHelp($"To maximize the chance of completed QSOs, consider 'early logging':{Environment.NewLine}{Environment.NewLine}The defining requirement for any QSO is the exchange of call signs and signal reports.{Environment.NewLine}Once either party sends an 'RRR' message (and reports have been exchanged), those requirements have been met... a '73' is not necessary for logging the QSO.{Environment.NewLine}{Environment.NewLine}Note that the QSO will continue after early logging, completing when 'RR73' or '73' is sent, or '73' is received.{Environment.NewLine}{Environment.NewLine}New countries are an exception to early logging. In this case, logging is only after confirmation with a '73' or 'RR73'.");
+            ShowHelp($"To maximize the chance of completed QSOs, consider 'early logging':" +
+                $"{nl}{nl}" +
+                $"The defining requirement for any QSO is the exchange of call signs and signal reports." +
+                $"{nl}Once either party sends an 'RRR' message (and reports have been exchanged), those requirements have been met... a '73' is not necessary for logging the QSO." +
+                $"{nl}{nl}Note that the QSO will continue after early logging, completing when 'RR73' or '73' is sent, or '73' is received." +
+                $"{nl}{nl}New countries are an exception to early logging. In this case, logging is only after confirmation with a '73' or 'RR73'.");
         }
 
         private void verLabel2_Click(object sender, EventArgs e)
         {
-            string command = "mailto:more.avantol@xoxy.net?subject=Otto";
+            string command = "https://github.com/avantol/Otto/releases";
             System.Diagnostics.Process.Start(command);
         }
 
@@ -853,13 +945,41 @@ namespace WSJTX_Controller
 
             wsjtxClient.UpdateMaxAutoGenEnqueue();
             string myContinent = wsjtxClient.myContinent == null ? "" : $" '{wsjtxClient.myContinent}'";
-            string onBand = bandComboBox.Items[1].ToString();
-            ShowHelp($"{friendlyName} will add up to {wsjtxClient.maxAutoGenEnqueue} calls to the reply list that meet these conditions:{Environment.NewLine}{Environment.NewLine}- The call has not been worked before on 'any band' or '{onBand}', as specified{Environment.NewLine}- The call is 'DX' or originated in your continent{myContinent}, as specified{Environment.NewLine}- The message can be a CQ, a call with grid information, or any type, as specified{Environment.NewLine}- The caller is on your Rx time slot (if in 'Call CQ' mode){Environment.NewLine}- The caller hasn't been replied to more than {wsjtxClient.maxPrevCqs} times during this mode / band session.{Environment.NewLine}{Environment.NewLine}If you select 'DX', {friendlyName} will reply to calls from continents other than yours.{Environment.NewLine}{Environment.NewLine}For example, this is useful in case you've already worked all states/entities on your continent, and only want to reply to calls you haven't worked yet from other continents.{Environment.NewLine}{Environment.NewLine}- If you select your continent{myContinent}, {friendlyName} will reply only to those calls.{Environment.NewLine}{Environment.NewLine}For example, this is useful in case you're running QRP, and expect you can't be heard on other continents, and only want to reply to calls from your continent.{Environment.NewLine}{Environment.NewLine}Select '{onBand}' to also add calls to the reply list that you haven't worked before on the current band.{Environment.NewLine}{Environment.NewLine}Note: If you have entered 'directed CQs' to reply to, those CQs will be replied to regardless of the 'DX',{myContinent}, 'include msg', or new 'any band' or '{onBand}' settings here.");
+            string onBand = $"{bandComboBox.Items[1]}";
+            ShowHelp($"{friendlyName} will add up to {wsjtxClient.maxAutoGenEnqueue} calls to the reply list that meet these conditions:" +
+                $"{nl}{nl}- The call has not been worked before 'on 1 band' or '{onBand}'." +
+                $"{nl}- The call is 'DX' or originated in your continent{myContinent}." +
+                $"{nl}- The received message can be" +
+                $"{nl}     * CQ, 73 or RR73 (the best time to reply), or" +
+                $"{nl}     * grid information (for distance calculation), or" +
+                $"{nl}     * any type (for maximum number of replies)." +
+                $"{nl}- The caller is on your Rx time slot (if in 'Call CQ' mode)." +
+                $"{nl}- The caller hasn't been replied to more than {wsjtxClient.maxPrevTo} times during this mode / band session." +
+                $"{nl}{nl}If you select 'DX', {friendlyName} will reply to calls from continents other than yours." +
+                $"{nl}{nl}For example, this is useful in case you've already worked all states/entities on your continent, and only want to reply to calls you haven't worked yet from other continents." +
+                $"{nl}{nl}- If you select your continent{myContinent}, {friendlyName} will reply only to those calls." +
+                $"{nl}{nl}For example, this is useful in case you're running QRP, and expect you can't be heard on other continents, and only want to reply to calls from your continent." +
+                $"{nl}{nl}Select 'on 1 band' if you want to reply to calls you haven't worked before, but only need new calls on one band. Select '{onBand}' to also reply to calls that you haven't worked before on the current band." +
+                $"{nl}{nl}Note: If you have entered 'directed CQs' to reply to, those CQs will be replied to regardless of the 'DX',{myContinent}, 'from messages', or new 'on 1 band' or '{onBand}' settings here.");
         }
 
         private void modeHelpLabel_Click(object sender, EventArgs e)
         {
-            ShowHelp($"Choose what you want this progam to do after replying to all queued calls:{Environment.NewLine}{Environment.NewLine}- Call CQ until there is a reply, and automatically complete each contact,{Environment.NewLine}or{Environment.NewLine}- Listen for CQs or other interesting calls, and automatically reply to them.{Environment.NewLine}{Environment.NewLine}The advantage to listening is that you can monitor both odd and even Rx time slots. This is helpful for maximizing POTA or new country QSOs, for example.{Environment.NewLine}{Environment.NewLine}(Note: If you choose 'Listen for calls', be sure to select a large enough number of retries in 'Limit to [ ] repeat Tx' so that the stations you call have a chance to reply before any automatic switch to the opposite time slot).{Environment.NewLine}{Environment.NewLine}Shortcut keys:{Environment.NewLine}    Ctrl+C  Call CQ{Environment.NewLine}    Ctrl+L  Listen for calls{Environment.NewLine}    Esc  Stop transmit immediately{Environment.NewLine}    Ctrl+Q  Clear reply list{Environment.NewLine}    Ctrl+N  Skip to next call (cancel if none){Environment.NewLine}    Alt+S  Setup{Environment.NewLine}");
+            ShowHelp($"Choose what you want this progam to do after replying to all queued calls:" +
+                $"{nl}{nl}- Call CQ until there is a reply, and automatically complete each contact," +
+                $"{nl}or" +
+                $"{nl}- Listen for CQs or other interesting calls, and automatically reply to them." +
+                $"{nl}{nl}The advantage to listening is that you can monitor both odd and even Rx time slots. This is helpful for maximizing POTA or new country QSOs, for example." +
+                $"{nl}{nl}(Note: If you choose 'Listen for calls', be sure to select a large enough number of retries in 'Limit to...repeated Tx' so that the stations you call have a chance to reply before any automatic switch to the opposite time slot)." +
+                $"{nl}{nl}Shortcut keys:" +
+                $"{nl}    Esc:  Stop transmit immediately" +
+                $"{nl}    Ctrl+Q:  Show/hide Quick-start setup" +
+                $"{nl}    Ctrl+O:  Show/hide complete Options" +
+                $"{nl}    Ctrl+C:  Call CQ" +
+                $"{nl}    Ctrl+L:  Listen for calls" +
+                $"{nl}    Ctrl+D:  Delete reply list" +
+                $"{nl}    Ctrl+N:  Skip to next call (cancel if none)" +
+                $"{nl}    Alt+C:  Configuration");
         }
 
         public void cqModeButton_Click(object sender, EventArgs e)
@@ -867,6 +987,7 @@ namespace WSJTX_Controller
             if (!formLoaded) return;
 
             wsjtxClient.TxModeChanged(WsjtxClient.TxModes.CALL_CQ);
+            if (guide != null) guide.UpdateView();
         }
 
         public void listenModeButton_Click(object sender, EventArgs e)
@@ -874,6 +995,7 @@ namespace WSJTX_Controller
             if (!formLoaded) return;
 
             wsjtxClient.TxModeChanged(WsjtxClient.TxModes.LISTEN);
+            if (guide != null) guide.UpdateView();
         }
 
         private void freqCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -882,14 +1004,18 @@ namespace WSJTX_Controller
 
             wsjtxClient.WsjtxSettingChanged();
             wsjtxClient.AutoFreqChanged(freqCheckBox.Checked, false);
+            if (guide != null) guide.UpdateView();
         }
 
         private void LimitTxHelpLabel_Click(object sender, EventArgs e)
         {
             if (!formLoaded) return;
 
-            string adv = wsjtxClient != null && wsjtxClient.advanced ? $"{Environment.NewLine}{Environment.NewLine}If 'Optimize' is selected, the maximum number of replies and CQs for the current call is automatically adjusted lower than the specified limit, to help process the call queue faster.{Environment.NewLine}{Environment.NewLine}If 'Hold' is selected, the repeat Tx limit is ignored, and replies to the current call sign are transmitted a maximum of {wsjtxClient.holdMaxTxRepeat} times. 'Hold' is automatically enabled when processing a 'new country', deselect 'Reply longre to new rare DX calls' to prevent this action." : "";
-            ShowHelp($"This will limit the number of times the same message is transmitted.{Environment.NewLine}{Environment.NewLine}For example, it will limit the number of repeated transmitted replies or CQs for the current call. If there is no response to your reply messages when the limit is reached, the next call in the queue is processed (or if the call queue is empty, CQing will resume).{Environment.NewLine}{Environment.NewLine}As the repeat limit is reduced, the number of times a call can be automatically re-added to the call queue is increased, to compensate.{adv}");
+            string adv = wsjtxClient != null && wsjtxClient.advanced ? $"{nl}{nl}If 'Optimize' is selected, the maximum number of replies and CQs for the current call is automatically adjusted lower than the specified limit (if possible), to help process the call queue faster." +
+                $"{nl}{nl}If 'Hold' is selected, the 'Repeated Tx' limit is ignored, and replies to the current call sign are transmitted a maximum of {wsjtxClient.holdMaxTxRepeat} times. 'Hold' is automatically enabled when processing a 'new DXCC', deselect 'Reply to new DXCC' to prevent this action." : "";
+            ShowHelp($"This will limit the number of times the same message is transmitted." +
+                $"{nl}{nl}For example, it will limit the number of repeated transmitted replies or CQs for the current call. If there is no response to your reply messages when the limit is reached, the next call in the queue is processed (or if the call queue is empty, CQing (or listening) will resume)." +
+                $"{nl}{nl}As the repeat limit is reduced, the number of times a call can be automatically re-added to the call queue is increased, to compensate.{adv}");
         }
 
         private void optimizeCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -967,18 +1093,54 @@ namespace WSJTX_Controller
             if (!formLoaded) return;
 
             string s = "";
-            if (wsjtxClient.showTxModes) s = $"{Environment.NewLine}{Environment.NewLine}If you select 'Exclusively', only new countries will be replied to, and all other calls will be ignored. (This option is only available when using the 'Listen for calls' operating mode).";
-            ShowHelp($"Select 'Reply longer to new rare DX calls' to retry replies many more times for any call (not only CQs) from *very* unusual countries or DXpeditions.{Environment.NewLine}{Environment.NewLine}This option is intended ONLY when replying to difficult stations that are likely to have many competing callers. It's not suitable at all for working common DX entities!{Environment.NewLine}{Environment.NewLine}If a call sign is from a country never worked before on any band, {friendlyName} will sound an audio notification and 'hold' (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeat} times.{Environment.NewLine}{Environment.NewLine}If a call sign is from a country not worked before on the current band, {friendlyName} will sound an audio notification and 'hold' (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeatNewOnBand} times.{Environment.NewLine}{Environment.NewLine}If a station never replies or won't confirm QSOs conveniently, you can add that call sign to the 'Except' list, and it will be ignored.{s}{Environment.NewLine}{Environment.NewLine}If you don't select 'Reply longer to new rare DX calls', you will still be able to reply to new DX stations, just with far fewer Tx retries.");
+            if (wsjtxClient.showTxModes) s = $"{nl}{nl}If you select 'Exclusively', only new countries will be replied to, and all other calls will be ignored. (This option is only available when using the 'Listen for calls' operating mode).";
+            ShowHelp($"Select 'Reply to new DXCC' to repeat replies more times than normal, for any message type, from new countries." +
+                $"{nl}{nl}This option is intended ONLY when replying to difficult stations that are likely to have many competing callers, like DXpeditions. It's NOT suitable at all for working the more common DX entities!" +
+                $"{nl}{nl}If a call sign is from a country never worked before on any band, {friendlyName} will sound an audio notification and 'hold' (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeat} times." +
+                $"{nl}{nl}If a call sign is from a country not worked before on the current band, {friendlyName} will sound an audio notification and 'hold' (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeatNewOnBand} times." +
+                $"{nl}{nl}If a station never replies or won't confirm QSOs conveniently, you can add that call sign to the 'Except' list, and it will be ignored.{s}" +
+                $"{nl}{nl}If you don't select 'Reply to new DXCC', you will still be able to reply automatically to messages from new countries, just with the normal number of Tx repeats.");
+        }
+
+        private void ReplyRR73HelpLabel_Click(object sender, EventArgs e)
+        {
+            ShowHelp($"Select 'Reply to RR73 msg' if you want to reply '73' to an RR73 message received at the end of a QSO." +
+                $"{nl}{nl}'RR73' means:" +
+                $"{nl}- 'Signal report received', and" +
+                $"{nl}- 'Best regards', and" +
+                $"{nl}- 'I'm confident you will see this', so" +
+                $"{nl}- 'No further reply requested'." +
+                $"{nl}{nl}You can safely skip replying to 'RR73' to speed up the QSO cycle, if conditions allow." +
+                $"{nl}{nl}Exceptions:" +
+                $"{nl}- If from a new country, RR73 is always replied to with a '73'." +
+                $"{nl}- If a Fox/Hound-style (multi-stream) 'RR73' message, no '73' is expected by the caller, so it's not sent.");
+        }
+
+        private void PeriodHelpLabel_Click(object sender, EventArgs e)
+        {
+            ShowHelp($"'Tx period' allows you to select which period you want WSJT-X to use for transmit when in 'Listen for calls' mode." +
+                $"{nl}{nl}If you are using multiple transmitters at your station, you may want for all of them to use the same Tx period, to avoid interference." +
+                $"{nl}{nl}Otherwise, the normal selection is 'any'.");
+        }
+
+        private void PriorityHelpLabel_Click(object sender, EventArgs e)
+        {
+            ShowHelp($"Select the order to reply to messages specified in the 'Reply to new calls' section:" +
+                $"{nl}{nl}- 'Most recent' (when combined with 'Repeated Tx' set to '1' allows immediate replies to a different new message in every Rx period... VERY effective! Select 'CQ/73' to reply to a caller the instant the caller is known to be available for a new QSO." +
+                $"{nl}{nl}- 'Order received' forms a 'first-in-first-out queue', where the oldest message is replied to first, so wait times for callers are equalized." +
+                $"{nl}{nl}- The 'Best for...beam' selections allow messages from callers closest to the specified beam heading to be answered first. Messages from callers to the side and back of your beam heading are ignored. This selection works best when grid information is available from messages, by selecting 'CD/grid'." +
+                $"{nl}{nl}Note that the ordering of calls to {MyCall()}, directed CQs, and new DXCCs are not affected by this option; these calls always replied to before the calls specified in this 'Reply to new calls' section.");
+        }
+
+        private void AutoFreqHelpLabel_Click(object sender, EventArgs e)
+        {
+            ShowHelp($"The Tx audio frequency is automatically set to an unused part of the audio spectrum." +
+                $"{nl}{nl}After a period of no replies being received, transmitting is temporarily suspended for one Tx cycle, the received audio is re-sampled, and the best Tx frequency is re-calculated.");
         }
 
         private void callAddedCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             if (formLoaded && callAddedCheckBox.Checked) wsjtxClient.Play("blip.wav");
-        }
-
-        private void AutoFreqHelpLabel_Click(object sender, EventArgs e)
-        {
-            ShowHelp($"The Tx audio frequency is automatically set to an unused part of the audio spectrum.{Environment.NewLine}{Environment.NewLine}After a period of no replies being received, transmitting is temporarily suspended for one Tx cycle, the received audio is re-sampled, and the best Tx frequency is re-calculated.");
         }
 
         private void exceptTextBox_KeyPress(object sender, KeyPressEventArgs e)
@@ -1013,28 +1175,30 @@ namespace WSJTX_Controller
                 if (callCqDxCheckBox.Checked) ignoreNonDxCheckBox.Checked = false;
             }
 
-            if (!callCqDxCheckBox.Checked && !callDirCqCheckBox.Checked)
+            ValidateDirCqTextBox();
+            if (!callCqDxCheckBox.Checked && !callDirCqCheckBox.Checked && !callNonDirCqCheckBox.Checked)
             {
                 callNonDirCqCheckBox.Checked = true;
+                if (formLoaded)
+                {
+                    dirCqTimer.Start();
+                }
             }
 
+            if (guide != null) guide.UpdateView();
         }
 
         private void directedTextBox_Leave(object sender, EventArgs e)
         {
             if (directedTextBox.Text == separateBySpaces) return;
 
-            string text = directedTextBox.Text.Replace("DX", "");       //not allowed
-            text = text.Replace("*", "");        //obsoleted
-            var dirArray = text.Trim().ToUpper().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            string corrText = "";
-            string delim = "";
-            foreach (string dir in dirArray)
+            ValidateDirCqTextBox();
+
+            if (directedTextBox.Text == "")
             {
-                if (dir.Length >= 2 && dir.Length <= 4) corrText = corrText + delim + dir;
-                delim = " ";
+                callDirCqCheckBox.Checked = false;
+                return;
             }
-            directedTextBox.Text = corrText;
         }
 
         private void ignoreNonDxCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -1049,6 +1213,35 @@ namespace WSJTX_Controller
             }
         }
 
+        private void callDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (!formLoaded) return;
+
+            directedTextBox.Enabled = callDirCqCheckBox.Checked;
+            if (callDirCqCheckBox.Checked && directedTextBox.Text == separateBySpaces)
+            {
+                ignoreDirectedChange = true;
+                directedTextBox.Clear();
+                directedTextBox.ForeColor = System.Drawing.Color.Black;
+            }
+            if (!callDirCqCheckBox.Checked && directedTextBox.Text == "") directedTextBox.Text = separateBySpaces;
+
+            if (callDirCqCheckBox.Checked)
+            {
+                if (callCqDxCheckBox.Checked) ignoreNonDxCheckBox.Checked = false;
+            }
+            else
+            {
+                if (!callCqDxCheckBox.Checked)
+                {
+                    callNonDirCqCheckBox.Checked = true;
+                }
+            }
+            wsjtxClient.WsjtxSettingChanged();              //resets CQ to not directed
+
+            if (guide != null) guide.UpdateView();
+        }
+
         private void callNonDirCqCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             if (callNonDirCqCheckBox.Checked)
@@ -1057,25 +1250,29 @@ namespace WSJTX_Controller
             }
             else
             {
-                if (!callCqDxCheckBox.Checked && (!callDirCqCheckBox.Checked || directedTextBox.Text == ""))
+                ValidateDirCqTextBox();
+                if (!callCqDxCheckBox.Checked && !callDirCqCheckBox.Checked)
                 {
                     callNonDirCqCheckBox.Checked = true;
+
+                    //tempOnly
                     if (formLoaded)
                     {
-                        new Thread(new ThreadStart(delegate
-                        {
-                            helpDialogsPending++;
-                            MessageBox.Show($"Because at least one type of CQ must be specified, 'Call CQ (non-directed)' can only be unselected if:{Environment.NewLine}{Environment.NewLine}'Call CQ DX' is selected{Environment.NewLine}or{Environment.NewLine}'Call CQ directed to' is selected and direction text is entered.", wsjtxClient.pgmName, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            helpDialogsPending--;
-                        })).Start();
-                        return;
+                        dirCqTimer.Start();
                     }
                 }
             }
             if (formLoaded) wsjtxClient.WsjtxSettingChanged();              //resets CQ to non-directed
+
+            if (guide != null) guide.UpdateView();
         }
 
         private void alertTextBox_Leave(object sender, EventArgs e)
+        {
+            ValidateAlertTextBox();
+        }
+
+        private void ValidateAlertTextBox()
         {
             if (alertTextBox.Text == separateBySpaces) return;
 
@@ -1098,6 +1295,32 @@ namespace WSJTX_Controller
                 replyDxCheckBox.Checked = false;
                 replyLocalCheckBox.Checked = false;
             }
+
+            if (formLoaded) wsjtxClient.ReplyNewOnlyChanged();
+
+            if (guide != null) guide.UpdateView();
+        }
+
+        private void ValidateDirCqTextBox()
+        {
+            if (directedTextBox.Text == separateBySpaces) return;
+
+            string text = directedTextBox.Text.Replace("DX", "");       //not allowed
+            text = text.Replace("*", "");        //obsoleted
+            var dirArray = text.Trim().ToUpper().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            string corrText = "";
+            string delim = "";
+            foreach (string dir in dirArray)
+            {
+                if (dir.Length >= 2 && dir.Length <= 4)
+                {
+                    corrText = corrText + delim + dir;
+                    delim = " ";
+                }
+            }
+            directedTextBox.Text = corrText;
+
+            if (corrText == "") callDirCqCheckBox.Checked = false;
         }
 
         public void updateReplyNewOnlyCheckBoxEnabled()
@@ -1130,11 +1353,12 @@ namespace WSJTX_Controller
 
             UpdateCqNewOnBand();
             CheckManualSelection();
+            if (guide != null) guide.UpdateView();
         }
 
         private void CheckManualSelection()
         {
-            if (formLoaded && wsjtxClient.showTxModes && listenModeButton.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked && !replyDirCqCheckBox.Checked && !replyNewDxccCheckBox.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked)
+            if (formLoaded && wsjtxClient.showTxModes && listenModeButton.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked && !replyDirCqCheckBox.Checked && !replyNewDxccCheckBox.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked & !replyNewDxccCheckBox.Checked)
             {
                 ShowMsg($"Select calls manually in WSJT-X (alt/dbl-click)", true);
             }
@@ -1147,54 +1371,22 @@ namespace WSJTX_Controller
 
             UpdateCqNewOnBand();
             CheckManualSelection();
-        }
-
-        void SystemEvents_UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
-        {
-            if (e.Category == UserPreferenceCategory.Window)
-            {
-                RescaleForm();
-            }
-        }
-
-        private void RescaleForm()
-        {
-            if (windowSizePctIncr == 0) return;
-
-            dispFactor = 1.0F + (float)(windowSizePctIncr / 100.0F);
-            Font = new Font(SystemFonts.DefaultFont.Name,
-                SystemFonts.DefaultFont.SizeInPoints * dispFactor, GraphicsUnit.Point);
-
-            float fontAdjPts = 0.0F;
-            foreach (Control control in ctrls)
-            {
-                control.Font = new Font(control.Font.Name, (control.Font.SizeInPoints * dispFactor) + fontAdjPts, control.Font.Style, GraphicsUnit.Point);
-            }
-        }
-
-        public void ResizeForm(int newPct)
-        {
-            windowSizePctIncr = newPct;
-            confirmWindowSize = windowSizePctIncr != 0;
-            showCloseMsgs = false;
-            Application.Restart();
-        }
-
-        public void confirmTimer_Tick(object sender, EventArgs e)
-        {
-            confirmTimer.Stop();
-            confirmWindowSize = false;
-            if (MessageBox.Show($"Do you want to keep the new window size?", wsjtxClient.pgmName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
-            {
-                windowSizePctIncr = 0;
-                showCloseMsgs = false;
-                Application.Restart();
-            }
+            if (guide != null) guide.UpdateView();
         }
 
         private void Controller_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Alt && e.KeyCode == Keys.S)
+            if (e.Control && e.KeyCode == Keys.Q)
+            {
+                guideLabel_Click(null, null);
+            }
+
+            if (e.Control && e.KeyCode == Keys.O)
+            {
+                optionsButton_Click(null, null);
+            }
+
+            if (e.Alt && e.KeyCode == Keys.C)
             {
                 setupButton_Click(null, null);
             }
@@ -1230,7 +1422,7 @@ namespace WSJTX_Controller
                 if (wsjtxClient.ConnectedToWsjtx()) wsjtxClient.NextCall(false, callListBox.SelectedIndex);
             }
 
-            if (e.Control && e.KeyCode == Keys.Q)       //clear call queue
+            if (e.Control && e.KeyCode == Keys.D)       //clear call queue
             {
                 if (wsjtxClient.ConnectedToWsjtx()) wsjtxClient.ClearCallQueue();
             }
@@ -1254,7 +1446,7 @@ namespace WSJTX_Controller
             new Thread(new ThreadStart(delegate
             {
                 helpDialogsPending++;
-                MessageBox.Show(s, wsjtxClient.pgmName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(s, $"{wsjtxClient.pgmName}{helpSuffix}", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 helpDialogsPending--;
             })).Start();
         }
@@ -1262,13 +1454,11 @@ namespace WSJTX_Controller
         private void cqModeButton_CheckedChanged(object sender, EventArgs e)
         {
             updateReplyNewOnlyCheckBoxEnabled();
-            UpdateMinSkipCount();
         }
 
         private void listenModeButton_CheckedChanged(object sender, EventArgs e)
         {
             updateReplyNewOnlyCheckBoxEnabled();
-            UpdateMinSkipCount();
         }
 
         private void DeleteTextBoxSelection(TextBox textBox)
@@ -1279,7 +1469,6 @@ namespace WSJTX_Controller
                 string sel = textBox.Text.Substring(textBox.SelectionStart, textBox.SelectionLength);
                 textBox.Text = textBox.Text.Replace(sel, "");
                 textBox.SelectionLength = 0;
-                textBox.SelectionStart = start;
             }
         }
 
@@ -1293,6 +1482,7 @@ namespace WSJTX_Controller
             if (!formLoaded) return;
 
             wsjtxClient.RankMethodIdxChanged(rankComboBox.SelectedIndex);
+            if (guide != null) guide.UpdateView();
         }
 
         private void callListBox_MouseDown(object sender, MouseEventArgs e)
@@ -1308,6 +1498,16 @@ namespace WSJTX_Controller
             bool dblClk = listBoxClickCount > 1;
             listBoxClickCount = 0;
             ProcessCallListBoxAnyClick(dblClk);
+        }
+
+        private void dirCqTimer_Tick(object sender, EventArgs e)
+        {
+            dirCqTimer.Stop();
+
+            if (!callCqDxCheckBox.Checked && !callDirCqCheckBox.Checked && !callNonDirCqCheckBox.Checked)
+            {
+                dirCqTimer.Start();
+            }
         }
 
         private void ProcessCallListBoxAnyClick(bool dblClk)
@@ -1352,11 +1552,6 @@ namespace WSJTX_Controller
             return (wsjtxClient == null || wsjtxClient.myCall == null) ? "my call" : wsjtxClient.myCall;
         }
 
-        private void ReplyRR73HelpLabel_Click(object sender, EventArgs e)
-        {
-            ShowHelp($"Select 'Reply to RR73 msg' if you want to reply '73' to an RR73 message received at the end of a QSO.{Environment.NewLine}{Environment.NewLine}'RR73' means:{Environment.NewLine}- 'Signal report received', and{Environment.NewLine}- 'Best regards', and{Environment.NewLine}- 'I'm confident you will see this', so{Environment.NewLine}- 'No further reply requested'.{Environment.NewLine}{Environment.NewLine}You can safely skip replying to 'RR73' to speed up the QSO cycle, if conditions allow.{Environment.NewLine}{Environment.NewLine}Exceptions:{Environment.NewLine}- If from a new country, RR73 is always replied to with a '73'.{Environment.NewLine}- If a Fox/Hound-style (multi-stream) 'RR73' message, no '73' is expected by the caller, so it's not sent.");
-        }
-
         private void cqOnlyRadioButton_Click(object sender, EventArgs e)
         {
             anyMsgRadioButton.Checked = cqGridRadioButton.Checked = false;
@@ -1371,7 +1566,148 @@ namespace WSJTX_Controller
         {
             cqGridRadioButton.Checked = cqOnlyRadioButton.Checked = false;
         }
+
+        private void periodComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (!formLoaded) return;
+
+            wsjtxClient.TxPeriodIdxChanged(periodComboBox.SelectedIndex);
+            if (guide != null) guide.UpdateView();
+        }
+
+        private void directedTextBox_TextChanged(object sender, EventArgs e)
+        {
+            if (ignoreDirectedChange)
+            {
+                ignoreDirectedChange = false;
+                return;           //was cleared initially
+            }
+            if (directedTextBox.Text == "") callDirCqCheckBox.Checked = false;
+            if (guide != null) guide.UpdateView();
+        }
+
+        public void GuideListenMode()
+        {
+            listenModeButton_Click(null, null);
+            periodComboBox.SelectedIndex = (int)WsjtxClient.ListenModeTxPeriods.ANY;
+        }
+
+        public void GuideCqMode()
+        {
+            cqModeButton_Click(null, null);
+        }
+        public void ToggleDx()
+        {
+            replyDxCheckBox.Checked = !replyDxCheckBox.Checked;
+        }
+
+        public void ToggleLocal()
+        {
+            replyLocalCheckBox.Checked = !replyLocalCheckBox.Checked;
+        }
+
+        public void ToggleActivator()
+        {
+            ValidateDirCqTextBox();
+            if (directedTextBox.Text == separateBySpaces || directedTextBox.Text == "") directedTextBox.Text = " ";
+            if (directedTextBox.Text == "POTA" && callDirCqCheckBox.Checked && !callCqDxCheckBox.Checked && !callNonDirCqCheckBox.Checked)
+            {
+                directedTextBox.Text = directedTextBox.Text = "";
+                callDirCqCheckBox.Checked = false;
+            }
+            else
+            {
+                directedTextBox.Text = "POTA";
+                callDirCqCheckBox.Checked = true;
+                callCqDxCheckBox.Checked = callNonDirCqCheckBox.Checked = false;
+            }
+            ValidateDirCqTextBox();
+        }
+        public void ToggleHunter()
+        {
+            bool origState = replyDirCqCheckBox.Checked;
+            ValidateAlertTextBox();
+            if (alertTextBox.Text == separateBySpaces || alertTextBox.Text == "") alertTextBox.Text = " ";
+            if (alertTextBox.Text.Contains("POTA") && replyDirCqCheckBox.Checked)
+            {
+                alertTextBox.Text = alertTextBox.Text.Replace("POTA", "");
+                if (alertTextBox.Text.Length == 0) replyDirCqCheckBox.Checked = false;
+            }
+            else
+            {
+                if (!alertTextBox.Text.Contains("POTA")) alertTextBox.Text = $"{alertTextBox.Text} POTA";
+                replyDirCqCheckBox.Checked = true;
+            }
+            ValidateAlertTextBox();
+        }
+
+        private void alertTextBox_TextChanged(object sender, EventArgs e)
+        {
+            if (guide != null) guide.UpdateView();
+        }
+
+        private void optionsButton_Click(object sender, EventArgs e)
+        {
+            if (!formLoaded) return;
+
+            showOptions = !showOptions;
+            if (showOptions) Hide();
+            SuspendLayout();
+            UpdateShowOptions();
+            ResumeLayout();
+            if (showOptions) Show();
+        }
+
+        private void UpdateShowOptions()
+        {
+            optionsButton.Text = (showOptions ? "Hide options" : "Show all options");
+
+            int offset = optionsOffset;
+            if (!showOptions) offset = -offset;
+
+            if (showOptions)
+            {
+                //restore the movable controls to original location
+                for (int i = 0; i < movableCtrlYs.Length; i++)
+                {
+                    movableCtrls[i].Location = new Point(movableCtrls[i].Location.X, movableCtrlYs[i]);
+                }
+            }
+            else
+            {
+                //move the movable controls to new location
+                for (int i = 0; i < movableCtrls.Length; i++)
+                {
+                    movableCtrls[i].Location = new Point(movableCtrls[i].Location.X, movableCtrls[i].Location.Y + offset);
+                }
+            }
+
+            foreach (Control control in hideCtrls)
+            {
+                control.Visible = showOptions;
+            }
+
+            Height = (wsjtxClient.debug && showOptions ? this.MaximumSize.Height : setupButton.Location.Y + setupButton.Height + 45);
+        }
+
+        public string[] CallDirCqEntries()
+        {
+            ValidateDirCqTextBox();
+            return directedTextBox.Text.Trim().ToUpper().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        public string[] ReplyDirCqEntries()
+        {
+            ValidateAlertTextBox();
+            return alertTextBox.Text.Trim().ToUpper().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        private void replyRR73CheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (formLoaded) wsjtxClient.ReplyRR73Changed(replyRR73CheckBox.Checked);
+        }
     }
 }
+
 
 
