@@ -5128,13 +5128,14 @@ namespace WSJTX_Controller
         {
             processDecodeTimer2.Stop();
             //           "call CQ" mode and a late 73 may have caused WSJT-X to start calling "CQ" when it should be "CQ DX" or other directed CQ
-            bool unwantedCq = (txMode == TxModes.CALL_CQ && (qsoState == WsjtxMessage.QsoStates.CALLING || qsoState == WsjtxMessage.QsoStates.SIGNOFF));
+            //to-do
+            //bool unwantedCq = (txMode == TxModes.CALL_CQ && (qsoState == WsjtxMessage.QsoStates.CALLING || qsoState == WsjtxMessage.QsoStates.SIGNOFF));
             DebugOutput($"{nl}{Time()} ProcessDecodeTimer2Tick, processDecodeTimer2 stop, paused:{paused} transmitting:{transmitting} restartQueue:{restartQueue}");
-            DebugOutput($"{spacer}txTimeout:{txTimeout} txMode:{txMode} qsoState:{qsoState} unwantedCq:{unwantedCq}");
+            DebugOutput($"{spacer}txTimeout:{txTimeout} txMode:{txMode} qsoState:{qsoState}");
 
             //note: must not call ProcessDecodes (CheckNextXmit) more than once per cycle if updating best freq
             // cancel CQ      higher priority call queued
-            if (unwantedCq || InterruptCallInProg())
+            if (InterruptCallInProg())
             {
                 restartQueue = true;
                 DebugOutput($"{spacer}restartQueue:{restartQueue}");
