@@ -133,6 +133,7 @@ namespace WSJTX_Controller
         private static bool recvStarted;
         private static uint defaultAudioOffset = 1500;
         private string failReason = "Failure reason: Unknown";
+        public static int beamWidth = 90;
 
         public const int maxQueueLines = 7, maxQueueWidth = 19, maxLogWidth = 9;
         private byte[] ba;
@@ -192,7 +193,6 @@ namespace WSJTX_Controller
         bool txInterrupted = false;
         bool metricUnits = false;
         int prevCallListBoxSelectedIndex = -1;
-        public int beamWidth = 90;
         private const int offBeamRank = -91;
         private int decodeNum = 0;
         private const int maxCheckTxRepeat = 2;
@@ -278,6 +278,12 @@ namespace WSJTX_Controller
             EVEN,
             ODD,
             ANY
+        }
+
+        public enum NewCallBands
+        {
+            ANY,
+            CURRENT
         }
 
         public WsjtxClient(Controller c, IPAddress reqIpAddress, int reqPort, bool reqMulticast, bool reqOverrideUdpDetect, bool reqDebug, bool reqLog)
@@ -2084,18 +2090,23 @@ namespace WSJTX_Controller
                             }
                             else        //deCall is not call in progress
                             {
-                                //check for reply to RR73
-                                if (logList.Contains(deCall) && !callQueue.Contains(deCall) && dmsg.IsRR73() && (ctrl.replyRR73CheckBox.Checked || Priority(deCall) <= (int)CallPriority.NEW_COUNTRY_ON_BAND))        //call not in queue, enqueue the call data
+                                //check for required reply to RR73
+                                if (isCorrectTimePeriod && logList.Contains(deCall) && dmsg.IsRR73() && (ctrl.replyRR73CheckBox.Checked || Priority(deCall) <= (int)CallPriority.NEW_COUNTRY_ON_BAND))        //call not in queue, enqueue the call data
                                 {
                                     AddTimeoutCall(deCall);
-                                    if (isCorrectTimePeriod)
+                                    //allow RR73 to be processed
+                                    if (!callQueue.Contains(deCall))
                                     {
                                         DebugOutput($"{spacer}'{deCall}' not already in queue");
                                         AddCall(deCall, dmsg);
                                         if (ctrl.callAddedCheckBox.Checked) Play("blip.wav");
                                     }
+                                    else
+                                    {
+                                        UpdateCall(deCall, dmsg);
+                                    }
                                 }
-                                else
+                                else //don't process the 73 or RR73
                                 {
                                     RemoveCall(deCall);     //may have been added manually
                                 }
@@ -3673,7 +3684,7 @@ namespace WSJTX_Controller
             bool isAcceptableCq = isCq && (directedTo == null || directedTo == "DX" || directedTo == myContinent);
             bool isWantedNewCountryOnBand = ctrl.replyNewDxccCheckBox.Checked && emsg.IsNewCountryOnBand;
             bool isWantedNewCountry = ctrl.replyNewDxccCheckBox.Checked && emsg.IsNewCountry;
-            bool isWantedNewCallOnBand = ctrl.bandComboBox.SelectedIndex == 1 && emsg.IsNewCallOnBand;
+            bool isWantedNewCallOnBand = ctrl.bandComboBox.SelectedIndex == (int)WsjtxClient.NewCallBands.CURRENT && emsg.IsNewCallOnBand;
             bool isWantedAzimuth = rankMethod < RankMethods.AZ_NQUAD || rankMethod > RankMethods.AZ_NWQUAD || emsg.Rank != offBeamRank;         //within desired azimuth
             bool isWantedMsgType = ((ctrl.cqOnlyRadioButton.Checked && (isAcceptableCq) || WsjtxMessage.Is73orRR73(emsg.Message))               //CQ, with or without grid info, or (RR)73
                 || (ctrl.cqGridRadioButton.Checked && ((isAcceptableCq && WsjtxMessage.Grid(emsg.Message) != null) || isGridReply))             //CQ or reply, with grid info
@@ -5653,7 +5664,7 @@ namespace WSJTX_Controller
             float cqFactor = ctrl.cqOnlyRadioButton.Enabled && ctrl.cqOnlyRadioButton.Checked ? 1.25f : 1.0f;
             float gridFactor = ctrl.cqGridRadioButton.Enabled && ctrl.cqGridRadioButton.Checked ? 1.35f : 1.0f;
             float anyFactor = ctrl.anyMsgRadioButton.Enabled && ctrl.anyMsgRadioButton.Checked ? 1.5f : 1.0f;
-            float obFactor = ctrl.bandComboBox.Enabled && ctrl.bandComboBox.SelectedIndex == 1 ? 1.75f : 1.0f;
+            float obFactor = ctrl.bandComboBox.Enabled && ctrl.bandComboBox.SelectedIndex == (int)WsjtxClient.NewCallBands.CURRENT ? 1.75f : 1.0f;
             float factor = cqFactor * gridFactor * anyFactor * obFactor;
             maxAutoGenEnqueue = (int)(maxAutoGenEnqueue * factor);
         }
@@ -5890,12 +5901,14 @@ namespace WSJTX_Controller
             if (ctrl.firstRun && !advanced)
             {
                 MessageBox.Show($"{ctrl.friendlyName} can be completely automatic, you don't need to do anything for continuous CQs and replies after you select 'Enable Tx' in WSJT-X.{Environment.NewLine}{Environment.NewLine}Do that when you're ready to start CQing, then for the next 15 minutes or so, let {ctrl.friendlyName} run by itself so you can get familiar with how it works.", pgmName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ctrl.firstRun = false;          //prevent asking again during this run (ex: config chgd, callsign chgd, etc.)
                 return;
             }
 
             if (ctrl.firstRun && advanced && !showTxModes)
             {
                 ctrl.guideLabel_Click(null, null);
+                ctrl.firstRun = false;          //prevent asking again during this run (ex: config chgd, callsign chgd, etc.)
                 return;
             }
 
@@ -6336,11 +6349,11 @@ namespace WSJTX_Controller
             ctrl.bandComboBox.Items.Clear();
             if (opMode == OpModes.ACTIVE)
             {
-                ctrl.bandComboBox.Items.AddRange(new string[] { "on 1 band", $"for {FreqToBand(dialFrequency / 1e6)}" });
+                ctrl.bandComboBox.Items.AddRange(new string[] { "for 1 band", $"for {FreqToBand(dialFrequency / 1e6)}" });
             }
             else
             {
-                ctrl.bandComboBox.Items.AddRange(new string[] { "on 1 band", "for band" });
+                ctrl.bandComboBox.Items.AddRange(new string[] { "for 1 band", "this band" });
             }
             ctrl.bandComboBox.SelectedIndex = idx;
         }

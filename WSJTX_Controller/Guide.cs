@@ -100,6 +100,12 @@ namespace WSJTX_Controller
                     ctrl.replyNewOnlyCheckBox.Checked = false;
                 }
             }
+
+            if (dxButtonEnabled || nonDxButtonEnabled)
+            {
+                ctrl.cqOnlyRadioButton.Checked = true;
+                ctrl.bandComboBox.SelectedIndex = (int)WsjtxClient.NewCallBands.ANY;
+            }
         }
 
         private void Guide_FormClosed(object sender, FormClosedEventArgs e)
@@ -144,7 +150,6 @@ namespace WSJTX_Controller
 
                 SetState(allButton, (ctrl.rankComboBox.SelectedIndex == (int)WsjtxClient.RankMethods.CALL_ORDER && ctrl.timeoutNumUpDown.Value == 3), true);
                 SetState(recentButton, (ctrl.rankComboBox.SelectedIndex == (int)WsjtxClient.RankMethods.MOST_RECENT && ctrl.timeoutNumUpDown.Value == 1), true);
-
             }
 
             SetState(freqButton, (freqButtonEnabled = ctrl.freqCheckBox.Checked), true);
@@ -203,9 +208,9 @@ namespace WSJTX_Controller
 
         private void dxButton_Click(object sender, EventArgs e)
         {
+
             UpdateAllButtons();
             ctrl.ToggleDx();
-            if (dxButtonEnabled) ctrl.cqOnlyRadioButton.Checked = true;
             UpdateAllButtons();
         }
 
@@ -213,7 +218,6 @@ namespace WSJTX_Controller
         {
             UpdateAllButtons();
             ctrl.ToggleLocal();
-            if (nonDxButtonEnabled) ctrl.cqOnlyRadioButton.Checked = true;
             UpdateAllButtons();
         }
 

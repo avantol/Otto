@@ -148,7 +148,8 @@ namespace WSJTX_Controller
                 MessageBox.Show("Unable to create settings file: " + pathFileNameExt + $"{nl}Continuing with default settings...", friendlyName, MessageBoxButtons.OK);
             }
 
-            string ipAddress = null;            //flag as invalid
+            string ipAddrStr = null;
+            IPAddress ipAddress = null;
             int port = 0;
             bool multicast = true;
             bool overrideUdpDetect = false;
@@ -178,7 +179,7 @@ namespace WSJTX_Controller
                     this.Location = Properties.Settings.Default.windowPos;
                 if (Properties.Settings.Default.windowHt != 0) 
                     this.Height = Properties.Settings.Default.windowHt;
-                ipAddress = Properties.Settings.Default.ipAddress;
+                ipAddrStr = Properties.Settings.Default.ipAddress;
                 port = Properties.Settings.Default.port;
                 multicast = Properties.Settings.Default.multicast;
                 timeoutNumUpDown.Value = Properties.Settings.Default.timeout;
@@ -227,9 +228,20 @@ namespace WSJTX_Controller
                 int.TryParse(iniFile.Read("windowHt"), out i);
                 this.Height = i;
 
-                ipAddress = iniFile.Read("ipAddress");
-                int.TryParse(iniFile.Read("port"), out port);
+                ipAddrStr = iniFile.Read("ipAddress");
                 multicast = iniFile.Read("multicast") == "True";
+                try
+                {
+                    ipAddress = IPAddress.Parse(ipAddrStr);
+                    port = int.Parse(iniFile.Read("port"));
+                }
+                catch (Exception err)
+                {
+                    ipAddrStr = Properties.Settings.Default.ipAddress;
+                    port = Properties.Settings.Default.port;
+                    multicast = Properties.Settings.Default.multicast;
+                }
+
                 int.TryParse(iniFile.Read("timeout"), out i);
                 timeoutNumUpDown.Value = i;
                 directedTextBox.Text = iniFile.Read("directeds");
@@ -349,7 +361,7 @@ namespace WSJTX_Controller
 #endif
 
             //start the UDP message server
-            wsjtxClient = new WsjtxClient(this, IPAddress.Parse(ipAddress), port, multicast, overrideUdpDetect, debug, diagLog);
+            wsjtxClient = new WsjtxClient(this, IPAddress.Parse(ipAddrStr), port, multicast, overrideUdpDetect, debug, diagLog);
             wsjtxClient.advanced = advanced;
             wsjtxClient.txMode = txMode;
             wsjtxClient.showTxModes = showTxModes;
@@ -873,7 +885,7 @@ namespace WSJTX_Controller
                 $"{nl}- Automatic operation continues after this call is processed." +
                 $"{nl}{nl}Note:" +
                 $"{nl}- Unless 'Reply priority' is set to 'order received', lower-priority calls on the reply list are continuously replaced by higher-priority calls." +
-                $"{nl}- If 'Reply priority' is set to 'Best for ... beam', calls that are off the nominal azimuth by more than {wsjtxClient.beamWidth / 2} degrees are not added to the reply list." +
+                $"{nl}- If 'Reply priority' is set to 'Best for ... beam', calls that are off the nominal azimuth by more than {WsjtxClient.beamWidth / 2} degrees are not added to the reply list." +
                 $"{nl}- '*' denotes a call from a new country." +
                 $"{nl}{nl}You can leave this dialog open while you try out these hints.");
         }
@@ -947,7 +959,7 @@ namespace WSJTX_Controller
             string myContinent = wsjtxClient.myContinent == null ? "" : $" '{wsjtxClient.myContinent}'";
             string onBand = $"{bandComboBox.Items[1]}";
             ShowHelp($"{friendlyName} will add up to {wsjtxClient.maxAutoGenEnqueue} calls to the reply list that meet these conditions:" +
-                $"{nl}{nl}- The call has not been worked before 'on 1 band' or '{onBand}'." +
+                $"{nl}{nl}- The call has not been worked before 'for 1 band' or '{onBand}'." +
                 $"{nl}- The call is 'DX' or originated in your continent{myContinent}." +
                 $"{nl}- The received message can be" +
                 $"{nl}     * CQ, 73 or RR73 (the best time to reply), or" +
@@ -959,8 +971,8 @@ namespace WSJTX_Controller
                 $"{nl}{nl}For example, this is useful in case you've already worked all states/entities on your continent, and only want to reply to calls you haven't worked yet from other continents." +
                 $"{nl}{nl}- If you select your continent{myContinent}, {friendlyName} will reply only to those calls." +
                 $"{nl}{nl}For example, this is useful in case you're running QRP, and expect you can't be heard on other continents, and only want to reply to calls from your continent." +
-                $"{nl}{nl}Select 'on 1 band' if you want to reply to calls you haven't worked before, but only need new calls on one band. Select '{onBand}' to also reply to calls that you haven't worked before on the current band." +
-                $"{nl}{nl}Note: If you have entered 'directed CQs' to reply to, those CQs will be replied to regardless of the 'DX',{myContinent}, 'from messages', or new 'on 1 band' or '{onBand}' settings here.");
+                $"{nl}{nl}Select 'for 1 band' if you want to reply to calls you haven't worked before, but only need new calls on one band. Select '{onBand}' to also reply to calls that you haven't worked before on the current band." +
+                $"{nl}{nl}Note: If you have entered 'directed CQs' to reply to, those CQs will be replied to regardless of the 'DX',{myContinent}, 'from messages', or new 'for 1 band' or '{onBand}' settings here.");
         }
 
         private void modeHelpLabel_Click(object sender, EventArgs e)
