@@ -4,7 +4,7 @@
 <br><br><b><i>Use all appropriate caution since transmit can start at any time once you select "Enable Tx" in WSJT-X!!! Whenever the "Enable Tx" button is red, your antenna can be energized.</i></b>
 <br><br>At first run, basic mode:
 <br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/ctrlv2_Init.JPG">
-<br><br>Later, advanced mode:
+<br><br>Later, advanced mode (all options displayed):
 <br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/ctrlv2.JPG">
 <br><br>As a start, Otto stores up calls that are interesting to you that come in while you're working another call, then replies to each in turn.
 <br><br>You can also do things like:
