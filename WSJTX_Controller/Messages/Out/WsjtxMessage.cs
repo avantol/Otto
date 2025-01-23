@@ -73,7 +73,7 @@ namespace WsjtxUdpLib.Messages.Out
         }
 
         //detect bad (garbage) decode
-        public static bool IsInvalidCall(string call)
+        private static bool IsInvalidCall(string call)
         {
             if (call.Contains("/")) return false;
             if (call.Length > maxBaseCallsignLength) return true;
@@ -113,6 +113,12 @@ namespace WsjtxUdpLib.Messages.Out
         private static bool IsInvalid(string msg)
         {
             return msg == null || msg.Contains("...") || msg.Contains('<') || msg.Contains('>');
+        }
+
+        public static bool IsInvalidType(string msg)
+        {
+            return !IsCQ(msg) && !IsReply(msg) && !IsShortReply(msg) && !IsReport(msg) && !IsRogerReport(msg) 
+                && !IsRogers(msg) && !IsRR73(msg) && !Is73(msg);
         }
 
         //there are grid codes that *contain* "73", so test for *exactly* "73" or "RR73";
@@ -216,8 +222,19 @@ namespace WsjtxUdpLib.Messages.Out
             return IsGridFormat(words[2]);
         }
 
+        //msg in the form "W1AW K1JT"
+        public static bool IsShortReply(string msg)
+        {
+            if (IsInvalid(msg)) return false;
+            string[] words = msg.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Count() != 2) return false;
+            if (IsCQ(msg)) return false;
+            return true;
+        }
+
         //similar to: "CQ RU K1JT" or "CQ TEST" or "W1AW K1JT 559 WY" or "W1AW K1JT R 559 WY"
-        //or "W1AW K1JT R 559 0002" "W1AW K1JT 569 0021"
+        //or "W1AW K1JT R 559 0002" "W1AW K1JT 569 0021" "W1AW K1JT R DM14"
+        //or "WM8Q K9AVT 2A MO" "WM8Q K9AVT R 2A MO"
         public static bool IsContest(string msg)
         {
             if (IsInvalid(msg)) return false;
@@ -245,6 +262,13 @@ namespace WsjtxUdpLib.Messages.Out
             //W1AW K1JT R DM14
             //   0   1  2  3
             if (words.Count() == 4 && words[2] == "R" && IsGridFormat(words[3])) return true;
+            //"WM8Q K9AVT 2A MO"
+            //   0   1    2  3
+            if (words.Count() == 4 && words[2].Length == 2 && words[3].Length == 2) return true;
+            //"WM8Q K9AVT R 2A MO"
+            //   0   1    2  3 4
+            if (words.Count() == 5 && words[2] == "R" && words[3].Length == 2 && words[4].Length == 2) return true;
+
             return false;
         }
 
@@ -256,9 +280,9 @@ namespace WsjtxUdpLib.Messages.Out
         }
 
         //return the "directed to" part of the CQ call (if exists) in a possible CQ msg
-        //msg only in the form "CQ WY K1JT" or "CQ WY K1JT EM51" or "CQ USA K1JT" 
+        //msg only in the form "CQ WY K1JT" or "CQ WY K1JT EM51" or "CQ USA K1JT" or "CQ CQ K1JT"
         //or "CQ USA K1JT EM51"or "CQ ASIA K1JT EM51" or "CQ POTA K1JT"
-        //but not "CQ WY SD K1JT EM51" or "CQ WY SD K1JT" (not std msgs) or "CQ K1JT" or "CQ CQ K1JT"
+        //but not "CQ WY SD K1JT EM51" or "CQ WY SD K1JT" (not std msgs) or "CQ K1JT" 
         //if not a directed CQ msg msg, return null
         public static string DirectedTo(string msg)
         {
@@ -272,10 +296,8 @@ namespace WsjtxUdpLib.Messages.Out
             if (words.Count() == 3 && !IsAlphaOnly(words[1]) && IsGridFormat(words[2])) return null;
             //not "CQ WY SD K1JT" 
             if (words.Count() == 4 && IsAlphaOnly(words[1]) && IsAlphaOnly(words[2])) return null;
-            //is "CQ USA K1JT EM51" or "CQ USA K1JT" 
-            if (words[1] == "CQ") return null;
-            //not "CQ CQ K1JT"
-            return words[1];
+            //is "CQ USA K1JT EM51" or "CQ USA K1JT"
+            return words[1]; 
         }
 
         //msg in the form "WIAW K2JT +03" or "W1AW K1JT R-04"

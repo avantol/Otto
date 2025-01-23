@@ -65,3 +65,4 @@ C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Debug\WSJTX_Controller.cspr
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Debug\WSJTX_Controller.exe
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Debug\WSJTX_Controller.pdb
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Debug\WSJTX_Controller.Guide.resources
+C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Debug\WSJTX_Controller.HelpDlg.resources

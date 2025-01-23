@@ -178,6 +178,11 @@ namespace WsjtxUdpLib.Messages.Out
             return WsjtxMessage.IsContest(Message);
         }
 
+        public bool IsInvalidType()
+        {
+            return WsjtxMessage.IsInvalidType(Message);
+        }
+
         public bool IsPotaOrSota()
         {
             return WsjtxMessage.IsPotaOrSota(Message);
@@ -268,6 +273,7 @@ namespace WsjtxUdpLib.Messages.Out
     public class EnqueueDecodeMessage : DecodeMessage
     {
         private string _country = "";
+        private string _continent = "";
 
         public bool Modifier { get; set; }      //false = Alt key, true = Ctrl + Alt keys
         public bool AutoGen { get; set; }       //only CQ messages, and sent w/o manual intervention in WSJT-X
@@ -285,7 +291,22 @@ namespace WsjtxUdpLib.Messages.Out
                 _country = WsjtxCountry(value);
             }
 }
-        public string Continent { get; set; }
+        public string Continent 
+        {
+            get => _continent;
+
+            set
+            {
+                if (value == null)
+                {
+                    _continent = "";
+                }
+                else
+                {
+                    _continent = value;
+                }
+            }
+        }
         public int Distance { get; set; }
         public int Azimuth { get; set; }
         public int Rank { get; set; }
@@ -388,8 +409,34 @@ namespace WsjtxUdpLib.Messages.Out
 
             enqueueDecodeMessage.SequenceNumber = 0;
 
-            //enqueueDecodeMessage.messageWords = enqueueDecodeMessage.Message.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            return enqueueDecodeMessage;
+        }
 
+        public EnqueueDecodeMessage DeepCopy()
+        {
+            var enqueueDecodeMessage = new EnqueueDecodeMessage();
+            enqueueDecodeMessage.Id = String.Copy(Id);
+            enqueueDecodeMessage.AutoGen = AutoGen;
+            enqueueDecodeMessage.SinceMidnight = new TimeSpan(SinceMidnight.Ticks);
+            enqueueDecodeMessage.RxDate = new DateTime(RxDate.Ticks);
+            enqueueDecodeMessage.Snr = Snr;
+            enqueueDecodeMessage.DeltaTime = DeltaTime;
+            enqueueDecodeMessage.DeltaFrequency = DeltaFrequency;
+            enqueueDecodeMessage.Mode = String.Copy(Mode);
+            enqueueDecodeMessage.Message = String.Copy(Message);
+            enqueueDecodeMessage.UseStdReply = UseStdReply;
+            enqueueDecodeMessage.IsDx = IsDx;
+            enqueueDecodeMessage.Modifier = Modifier;
+            enqueueDecodeMessage.IsNewCallOnBand = IsNewCallOnBand;
+            enqueueDecodeMessage.IsNewCallAnyBand = IsNewCallAnyBand;
+            enqueueDecodeMessage.IsNewCountryOnBand = IsNewCountryOnBand;
+            enqueueDecodeMessage.IsNewCountry = IsNewCountry;
+            enqueueDecodeMessage.Priority = Priority;
+            enqueueDecodeMessage.Country = String.Copy(Country);
+            enqueueDecodeMessage.Continent = String.Copy(Continent);
+            enqueueDecodeMessage.Azimuth = Azimuth;
+            enqueueDecodeMessage.Distance = Distance;
+            enqueueDecodeMessage.SequenceNumber = SequenceNumber;
 
             return enqueueDecodeMessage;
         }

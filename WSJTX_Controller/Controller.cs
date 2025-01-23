@@ -28,11 +28,10 @@ namespace WSJTX_Controller
         public bool firstRun = true;        //first run for each user level
         public bool skipLevelPrompt = false;
         public bool offsetTune = false;
-        public int helpDialogsPending = 0;
-        public float dispFactor = 1.0F;
 
         private bool formLoaded = false;
         private SetupDlg setupDlg = null;
+        private HelpDlg helpDlg = null;
         private IniFile iniFile = null;
         private const int minSkipCount = 1;
         private const int maxSkipCount = 20;
@@ -57,7 +56,7 @@ namespace WSJTX_Controller
         public System.Windows.Forms.Timer setupTimer;
         public System.Windows.Forms.Timer guideTimer;
         public System.Windows.Forms.Timer callListBoxClickTimer;
-        public System.Windows.Forms.Timer dirCqTimer;
+        public System.Windows.Forms.Timer helpTimer;
 
         private string nl = Environment.NewLine;
 
@@ -86,9 +85,9 @@ namespace WSJTX_Controller
             callListBoxClickTimer = new System.Windows.Forms.Timer();
             callListBoxClickTimer.Interval = 250;
             callListBoxClickTimer.Tick += new System.EventHandler(callListBoxClickTimer_Tick);
-            dirCqTimer = new System.Windows.Forms.Timer();
-            dirCqTimer.Interval = 2000;
-            dirCqTimer.Tick += new System.EventHandler(dirCqTimer_Tick);
+            helpTimer = new System.Windows.Forms.Timer();
+            helpTimer.Interval = 20;
+            helpTimer.Tick += new System.EventHandler(helpTimer_Tick);
 
             optionsOffset = modeGroupBox.Location.Y - (callListBox.Location.Y + callListBox.Size.Height) - 10;
             movableCtrls = new Control[9] 
@@ -392,12 +391,6 @@ namespace WSJTX_Controller
 
         private void Controller_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (CheckHelpDlgOpen())
-            {
-                e.Cancel = true;
-                return;
-            }
-
             if (showCloseMsgs)                 //not closing for immediate restart
             {
                 firstRun = false;
@@ -490,6 +483,7 @@ namespace WSJTX_Controller
 
             CloseComm();
             if (guide != null) guide.Close();
+            if (helpDlg != null) helpDlg.Close();
         }
 
         public void CloseComm()
@@ -860,6 +854,11 @@ namespace WSJTX_Controller
             initialConnFaultTimer.Start();
             guide = null;
         }
+        public void HelpClosed()
+        {
+            initialConnFaultTimer.Start();
+            helpDlg = null;
+        }
 
         private void addCallLabel_Click(object sender, EventArgs e)
         {
@@ -884,9 +883,8 @@ namespace WSJTX_Controller
                 $"{nl}- This causes an immediate reply, instead of placing the call on a list of calls to reply to." +
                 $"{nl}- Automatic operation continues after this call is processed." +
                 $"{nl}{nl}Note:" +
-                $"{nl}- Unless 'Reply priority' is set to 'order received', lower-priority calls on the reply list are continuously replaced by higher-priority calls." +
                 $"{nl}- If 'Reply priority' is set to 'Best for ... beam', calls that are off the nominal azimuth by more than {WsjtxClient.beamWidth / 2} degrees are not added to the reply list." +
-                $"{nl}- '*' denotes a call from a new country." +
+                $"{nl}- The '*' symbol denotes a call from a new country." +
                 $"{nl}{nl}You can leave this dialog open while you try out these hints.");
         }
 
@@ -928,10 +926,12 @@ namespace WSJTX_Controller
 
         private void AlertDirectedHelpLabel_Click(object sender, EventArgs e)
         {
+            string continent = wsjtxClient.myContinent == null ? "" : $" '{wsjtxClient.myContinent}'";
             ShowHelp($"To reply to specific directed CQs from callers you haven't worked yet:" +
                 $"{nl}- Enter the code(s) for the directed CQs (2 to 4 letters each), separated by spaces." +
-                $"{nl}{nl}Example: DX POTA NA USA WY" +
-                $"{nl}{nl}If you specify 'DX', there will be no reply if the caller is on your continent." +
+                $"{nl}{nl}Example: POTA WY" +
+                $"{nl}{nl}If you enter 'DX', there will be no reply if the caller is on your continent." +
+                $"{nl}{nl}There is no need to enter 'DX' or your continent{continent} if you have selected 'DX' and 'CQ/73' at 'Reply to new calls'." +
                 $"{nl}{nl}(Note: 'CQ POTA' or 'CQ SOTA' is an exception to the 'already worked' rule, these calls will cause an auto-reply if you haven't already logged that call in the current mode/band in the current day).");
         }
 
@@ -956,11 +956,11 @@ namespace WSJTX_Controller
             if (!formLoaded) return;
 
             wsjtxClient.UpdateMaxAutoGenEnqueue();
-            string myContinent = wsjtxClient.myContinent == null ? "" : $" '{wsjtxClient.myContinent}'";
+            string continent = wsjtxClient.myContinent == null ? "" : $" '{wsjtxClient.myContinent}'";
             string onBand = $"{bandComboBox.Items[1]}";
             ShowHelp($"{friendlyName} will add up to {wsjtxClient.maxAutoGenEnqueue} calls to the reply list that meet these conditions:" +
                 $"{nl}{nl}- The call has not been worked before 'for 1 band' or '{onBand}'." +
-                $"{nl}- The call is 'DX' or originated in your continent{myContinent}." +
+                $"{nl}- The call is 'DX' or originated in your continent{continent}." +
                 $"{nl}- The received message can be" +
                 $"{nl}     * CQ, 73 or RR73 (the best time to reply), or" +
                 $"{nl}     * grid information (for distance calculation), or" +
@@ -969,10 +969,10 @@ namespace WSJTX_Controller
                 $"{nl}- The caller hasn't been replied to more than {wsjtxClient.maxPrevTo} times during this mode / band session." +
                 $"{nl}{nl}If you select 'DX', {friendlyName} will reply to calls from continents other than yours." +
                 $"{nl}{nl}For example, this is useful in case you've already worked all states/entities on your continent, and only want to reply to calls you haven't worked yet from other continents." +
-                $"{nl}{nl}- If you select your continent{myContinent}, {friendlyName} will reply only to those calls." +
+                $"{nl}{nl}- If you select your continent{continent}, {friendlyName} will reply only to those calls." +
                 $"{nl}{nl}For example, this is useful in case you're running QRP, and expect you can't be heard on other continents, and only want to reply to calls from your continent." +
                 $"{nl}{nl}Select 'for 1 band' if you want to reply to calls you haven't worked before, but only need new calls on one band. Select '{onBand}' to also reply to calls that you haven't worked before on the current band." +
-                $"{nl}{nl}Note: If you have entered 'directed CQs' to reply to, those CQs will be replied to regardless of the 'DX',{myContinent}, 'from messages', or new 'for 1 band' or '{onBand}' settings here.");
+                $"{nl}{nl}Note: If you have entered 'directed CQs' to reply to, those CQs will be replied to regardless of the 'DX',{continent}, 'from messages', or new 'for 1 band' or '{onBand}' settings here.");
         }
 
         private void modeHelpLabel_Click(object sender, EventArgs e)
@@ -1084,19 +1084,33 @@ namespace WSJTX_Controller
 
         private void startTextBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            DeleteTextBoxSelection(startTextBox);
+            if (startTextBox.SelectionLength > 0)
+            {
+                int start = startTextBox.SelectionStart;
+                startTextBox.SelectedText = "";
+                startTextBox.SelectionStart = start;
+                startTextBox.SelectionLength = 0;
+            }
             char c = e.KeyChar;
             if (c == (char)Keys.Back || ((c >= '0' && c <= '9') && startTextBox.Text.Length < 4)) return;
             Console.Beep();
+            if (startTextBox.Text.Length == 4) ShowMsg("Enter only 4 digits", false);
             e.Handled = true;
         }
 
         private void stopTextBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            DeleteTextBoxSelection(stopTextBox);
+            if (stopTextBox.SelectionLength > 0)
+            {
+                int start = stopTextBox.SelectionStart;
+                stopTextBox.SelectedText = "";
+                stopTextBox.SelectionStart = start;
+                stopTextBox.SelectionLength = 0;
+            }
             char c = e.KeyChar;
             if (c == (char)Keys.Back || ((c >= '0' && c <= '9') && stopTextBox.Text.Length < 4)) return;
             Console.Beep();
+            if (stopTextBox.Text.Length == 4) ShowMsg("Enter only 4 digits", false);
             e.Handled = true;
         }
 
@@ -1191,10 +1205,6 @@ namespace WSJTX_Controller
             if (!callCqDxCheckBox.Checked && !callDirCqCheckBox.Checked && !callNonDirCqCheckBox.Checked)
             {
                 callNonDirCqCheckBox.Checked = true;
-                if (formLoaded)
-                {
-                    dirCqTimer.Start();
-                }
             }
 
             if (guide != null) guide.UpdateView();
@@ -1266,12 +1276,6 @@ namespace WSJTX_Controller
                 if (!callCqDxCheckBox.Checked && !callDirCqCheckBox.Checked)
                 {
                     callNonDirCqCheckBox.Checked = true;
-
-                    //tempOnly
-                    if (formLoaded)
-                    {
-                        dirCqTimer.Start();
-                    }
                 }
             }
             if (formLoaded) wsjtxClient.WsjtxSettingChanged();              //resets CQ to non-directed
@@ -1317,8 +1321,7 @@ namespace WSJTX_Controller
         {
             if (directedTextBox.Text == separateBySpaces) return;
 
-            string text = directedTextBox.Text.Replace("DX", "");       //not allowed
-            text = text.Replace("*", "");        //obsoleted
+            string text = directedTextBox.Text.Replace("*", "");        //obsoleted
             var dirArray = text.Trim().ToUpper().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             string corrText = "";
             string delim = "";
@@ -1440,27 +1443,18 @@ namespace WSJTX_Controller
             }
         }
 
-        private bool CheckHelpDlgOpen()     //true if dlg open
+        public void ShowHelp(string s)
         {
-            if (helpDialogsPending != 0)
-            {
-                ShowMsg("Close any open dialogs first", true);
-                return true;
-            }
-            return false;
+            helpTimer.Tag = s;
+            helpTimer.Start();
         }
 
-        private void ShowHelp(string s)
+        private void helpTimer_Tick(object sender, EventArgs e)
         {
-            if (CheckHelpDlgOpen()) return;
-
-            //help for setting directed CQs
-            new Thread(new ThreadStart(delegate
-            {
-                helpDialogsPending++;
-                MessageBox.Show(s, $"{wsjtxClient.pgmName}{helpSuffix}", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                helpDialogsPending--;
-            })).Start();
+            helpTimer.Stop();
+            if (helpDlg != null) helpDlg.Close();
+            helpDlg = new HelpDlg(this, $"{wsjtxClient.pgmName}{helpSuffix}", (string)helpTimer.Tag);
+            helpDlg.Show();
         }
 
         private void cqModeButton_CheckedChanged(object sender, EventArgs e)
@@ -1510,16 +1504,6 @@ namespace WSJTX_Controller
             bool dblClk = listBoxClickCount > 1;
             listBoxClickCount = 0;
             ProcessCallListBoxAnyClick(dblClk);
-        }
-
-        private void dirCqTimer_Tick(object sender, EventArgs e)
-        {
-            dirCqTimer.Stop();
-
-            if (!callCqDxCheckBox.Checked && !callDirCqCheckBox.Checked && !callNonDirCqCheckBox.Checked)
-            {
-                dirCqTimer.Start();
-            }
         }
 
         private void ProcessCallListBoxAnyClick(bool dblClk)
