@@ -932,7 +932,7 @@ namespace WSJTX_Controller
                 $"{nl}{nl}Example: POTA WY" +
                 $"{nl}{nl}If you enter 'DX', there will be no reply if the caller is on your continent." +
                 $"{nl}{nl}There is no need to enter 'DX' or your continent{continent} if you have selected 'DX' and 'CQ/73' at 'Reply to new calls'." +
-                $"{nl}{nl}(Note: 'CQ POTA' or 'CQ SOTA' is an exception to the 'already worked' rule, these calls will cause an auto-reply if you haven't already logged that call in the current mode/band in the current day).");
+                $"{nl}{nl}(Note: 'CQ POTA' is an exception to the 'already worked' rule, these calls will cause an auto-reply if you haven't already logged that call in the current mode/band in the current day).");
         }
 
         private void LogEarlyHelpLabel_Click(object sender, EventArgs e)

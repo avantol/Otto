@@ -183,9 +183,9 @@ namespace WsjtxUdpLib.Messages.Out
             return WsjtxMessage.IsInvalidType(Message);
         }
 
-        public bool IsPotaOrSota()
+        public bool IsPota()
         {
-            return WsjtxMessage.IsPotaOrSota(Message);
+            return WsjtxMessage.IsCQ(Message) && WsjtxMessage.IsPota(Message);
         }
 
 

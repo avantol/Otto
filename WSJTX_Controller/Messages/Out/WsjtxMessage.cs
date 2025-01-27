@@ -272,11 +272,11 @@ namespace WsjtxUdpLib.Messages.Out
             return false;
         }
 
-        public static bool IsPotaOrSota(string msg)
+        public static bool IsPota(string msg)
         {
             //known to be a CQ
             string dirTo = DirectedTo(msg);
-            return dirTo != null && (dirTo == "POTA" || dirTo == "SOTA");
+            return dirTo != null && (dirTo == "POTA");
         }
 
         //return the "directed to" part of the CQ call (if exists) in a possible CQ msg

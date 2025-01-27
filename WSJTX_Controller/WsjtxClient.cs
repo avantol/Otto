@@ -49,7 +49,6 @@ namespace WSJTX_Controller
         public int maxPrevPotaTo = 4;
         public const int maxNewCountryTo = 16;
         public int maxAutoGenEnqueue = 4;
-        public const int maxTimeoutCalls = 5;
         public int holdMaxTxRepeat = 50;
         public int holdMaxTxRepeatNewOnBand = 20;
         public bool suspendComm = false;
@@ -200,6 +199,7 @@ namespace WSJTX_Controller
         private const int earthDiameter = 40000;
         private int decodeCycle = 0;
         private bool decodesProcessed = false;
+        private bool debugDetail = false;
 
         public TxModes txMode;
         private TxModes lastTxModeDebug;
@@ -1835,7 +1835,7 @@ namespace WSJTX_Controller
             dmsg.OffAir = true;     //default: play sound
             bool toMyCall = dmsg.IsCallTo(myCall);
 
-            //current msg (not to myCall) might be replaceablebby a previous msg (to myCall)
+            //current msg (not to myCall) might be replaceable by a previous msg (to myCall)
             //rec'd later in the QSO cycle than this msg;
             //this is the case when a caller stops calling myCall
             //and starts CQing again or is new country replying to another caller
@@ -1874,13 +1874,16 @@ namespace WSJTX_Controller
 
                 consecTimeoutCount = 0;
 
-                int callTimeouts = 0;
-                timeoutCallDict.TryGetValue(deCall, out callTimeouts);
-                DebugOutput($"{spacer}callTimeouts:{callTimeouts} maxTimeoutCalls:{maxTimeoutCalls}");
-                if (!dmsg.Is73orRR73() && !dmsg.IsRogers() && callTimeouts >= maxTimeoutCalls)        //trouble finishing signal report(s)
+                int prevTo = 0;
+                bool isWantedNewCountryOnBand = ctrl.replyNewDxccCheckBox.Checked && dmsg.IsNewCountryOnBand;
+                bool isPota = IsPotaCall(dmsg);
+                int maxTo = MaxTimeoutsForMsg(isWantedNewCountryOnBand, isPota);
+                timeoutCallDict.TryGetValue(deCall, out prevTo);
+                DebugOutput($"{spacer}prevTo:{prevTo} maxTo:{maxTo}");
+                if (!dmsg.Is73orRR73() && !dmsg.IsRogers() && prevTo >= maxTo)        //trouble finishing signal report(s)
                 {
                     ctrl.ShowMsg($"Blocking {deCall} temporarily...", false);
-                    DebugOutput($"{spacer}ignoring call, callTimeouts:{callTimeouts} restartQueue:{restartQueue}");
+                    DebugOutput($"{spacer}ignoring call, prevTo:{prevTo} restartQueue:{restartQueue}");
                     UpdateDebug();
                     return;
                 }
@@ -3002,11 +3005,15 @@ namespace WSJTX_Controller
                             DebugOutput($"{spacer}update priority/grid  '{msg.Message}' (was '{dmsg.Message}')");
                             RemoveCall(call);
 
-                            //check for "CQ DX" from a non-DX call
-                            if (msg.IsCQ() && !msg.IsDx && WsjtxMessage.DirectedTo(msg.Message) == "DX")
+                            //check for unwanted directed CQ
+                            string directedTo = WsjtxMessage.DirectedTo(msg.Message);
+                            if (msg.IsCQ() && directedTo != null)
                             {
-                                DebugOutput($"{spacer}call not updated, 'CQ DX' from non-DX");
-                                return false;
+                                if (!(directedTo == myContinent || (directedTo == "DX" && msg.IsDx) || (ctrl.replyDirCqCheckBox.Checked && IsDirectedAlert(directedTo, msg.IsDx))))
+                                {
+                                    DebugOutput($"{spacer}call not updated, 'CQ {directedTo}'");
+                                    return false;
+                                }
                             }
 
                             return AddCall(call, msg);      //re-ranked
@@ -3660,8 +3667,8 @@ namespace WSJTX_Controller
             string deCall = WsjtxMessage.DeCall(msg);       //known to not be null
             string toCall = WsjtxMessage.ToCall(msg);       //known to not be null
             string directedTo = WsjtxMessage.DirectedTo(msg);
-            bool isPota = WsjtxMessage.IsPotaOrSota(msg);
-            bool isCq = WsjtxMessage.IsCQ(emsg.Message);                //CQ format check
+            bool isCq = emsg.IsCQ();                //CQ format check
+            bool isPota = emsg.IsPota();
             bool isDirectedAlert = isCq && IsDirectedAlert(directedTo, emsg.IsDx);
             bool isGridReply = WsjtxMessage.IsReply(emsg.Message);
             bool isAcceptableCq = isCq && (directedTo == null || (directedTo == "DX" && emsg.IsDx) || directedTo == myContinent);
@@ -3687,9 +3694,9 @@ namespace WSJTX_Controller
             if (emsg.Country == "")
             {
                 ctrl.ShowMsg($"Unknown country for {deCall}", false);
-                DebugOutput($"{Time()}");
-                DebugOutput($"{emsg}{nl}{spacer}msg:'{emsg.Message}'");
-                DebugOutput($"{spacer}AddSelectedCall rejected, no country");
+                if (debugDetail) DebugOutput($"{Time()}");
+                if (debugDetail) DebugOutput($"{emsg}{nl}{spacer}msg:'{emsg.Message}'");
+                DebugOutput($"{spacer}AddSelectedCall rejected, no country for '{deCall}'");
                 return;
             }
 
@@ -3708,59 +3715,59 @@ namespace WSJTX_Controller
             //auto-generated notification of a call rec'd by WSJT-X;
             if (emsg.AutoGen)       //automatically-generated queue request, not clicked
             {
-                DebugOutput($"{Time()}");
-                DebugOutput($"{emsg}{nl}{spacer}msg:'{emsg.Message}' decodeCycle:{CurrentDecodeCycleString()} decodesProcessed:{decodesProcessed} paused:{paused}");
+                if (debugDetail) DebugOutput($"{Time()}");
+                if (debugDetail) DebugOutput($"{emsg}{nl}{spacer}msg:'{emsg.Message}' decodeCycle:{CurrentDecodeCycleString()} decodesProcessed:{decodesProcessed} paused:{paused}");
 
                 if (myCall == null || opMode != OpModes.ACTIVE)
                 {
-                    DebugOutput($"{spacer}AddSelectedCall rejected, myCall or opMode");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, myCall or opMode");
                     return;
                 }
 
                 //check for timed start pending
                 if (WaitingTimedStart())
                 {
-                    DebugOutput($"{spacer}AddSelectedCall rejected, waiting timed start");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, waiting timed start");
                     return;
                 }
 
                 if (deCall == null || deCall == callInProg)
                 {
-                    DebugOutput($"{spacer}AddSelectedCall rejected, deCall null or callInProg");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, deCall null or callInProg");
                     return;
                 }
 
                 if (!advanced)
                 {
-                    DebugOutput($"{spacer}AddSelectedCall rejected, not advanced");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, not advanced");
                     return;
                 }
 
                 if (callQueue.Contains(deCall))
                 {
                     UpdateCall(deCall, emsg);
-                    DebugOutput($"{spacer}AddSelectedCall rejected, already in callQueue");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, already in callQueue");
                     return;
                 }
 
-                //check for call sign logged already on this band, *except* if POTA/SOTA which can be logged repeatedly
+                //check for call sign logged already on this band, *except* if POTA which can be logged repeatedly
                 if (!emsg.IsNewCallOnBand && !isPota)
                 {
-                    DebugOutput($"{spacer}AddSelectedCall rejected, not new/not POTA");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, isPota:{isPota} IsNewCallOnBand:{emsg.IsNewCallOnBand}");
                     return;
                 }
 
                 if ((isWantedNewCountry || isWantedNewCountryOnBand) && IsException(deCall))
                 {
-                    DebugOutput($"{spacer}AddSelectedCall rejected, DXCC exception");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, DXCC exception");
                     return;
                 }
 
                 //check for call to be queued
                 if (isWantedCall || isWantedDirected || isWantedNewCountryOnBand)
                 {
-                    //DebugOutput($"{Time()}");
-                    //DebugOutput($"{emsg}{nl}{spacer}msg:'{emsg.Message}' decodeCycle:{CurrentDecodeCycleString()} decodesProcessed:{decodesProcessed} paused:{paused}");
+                    if (!debugDetail) DebugOutput($"{Time()}");
+                    if (!debugDetail) DebugOutput($"{emsg}{nl}{spacer}msg:'{emsg.Message}' decodeCycle:{CurrentDecodeCycleString()} decodesProcessed:{decodesProcessed} paused:{paused}");
                     DebugOutput($"{spacer}AddSelectedCall, isCq:{isCq} deCall:'{deCall}' Priority:{emsg.Priority} Rank:{emsg.Rank} IsDx:{emsg.IsDx} isWantedCall:{isWantedCall} isWantedDirected:{isWantedDirected}");
                     DebugOutput($"{spacer}isWantedNewCountry:{isWantedNewCountry} isWantedNewCountryOnBand:{isWantedNewCountryOnBand} isWantedOrigin:{isWantedOrigin} isWantedMsgType:{isWantedMsgType} isWantedAzimuth:{isWantedAzimuth}");
                     DebugOutput($"{spacer}maxAutoGenEnqueue:{maxAutoGenEnqueue} maxPrevTo:{maxPrevTo} isNewCallAnyBand:{emsg.IsNewCallAnyBand} isNewCallOnBand:{emsg.IsNewCallOnBand} isWantedNewCallOnBand:{isWantedNewCallOnBand}");
@@ -3793,7 +3800,7 @@ namespace WSJTX_Controller
                     if (callQueue.Count < maxAutoGenEnqueue || isWantedDirected || isWantedNewCountry || isWantedNewCountryOnBand || (addedWantedCall = CanAddWantedCall(deCall, emsg, isWantedCall)))
                     {
                         int prevTo = 0;
-                        int maxTo = (isPota || rankMethod == RankMethods.MOST_RECENT) ? maxPrevPotaTo : (isWantedNewCountryOnBand ? maxNewCountryTo : maxPrevTo);
+                        int maxTo = MaxTimeoutsForMsg(isWantedNewCountryOnBand, isPota);
                         DebugOutput($"{spacer}replyDecodePriority:{replyDecodePriority} prevTo:{prevTo} maxPrevPotaTo:{maxPrevPotaTo} maxTo:{maxTo}");
                         if (!timeoutCallDict.TryGetValue(deCall, out prevTo) || prevTo < maxTo)
                         {
@@ -3856,7 +3863,7 @@ namespace WSJTX_Controller
                 }
                 else
                 {
-                    DebugOutput($"{spacer}AddSelectedCall rejected, not wanted");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, not wanted");
                 }
                 return;
             }
@@ -4441,7 +4448,7 @@ namespace WSJTX_Controller
             string qsoDateOn = reptMsg.RxDate.ToString("yyyyMMdd");
             string qsoTimeOn = reptMsg.SinceMidnight.ToString("hhmmss");      //one of the report decodes
             EnqueueDecodeMessage cqMsg = CqMsg(call);
-            bool isPota = cqMsg != null && WsjtxMessage.IsPotaOrSota(cqMsg.Message);
+            bool isPota = cqMsg != null && cqMsg.IsPota();
             var dtNow = DateTime.UtcNow;
 
             if (recdMsg == null)            //logging because of xmitted RRR, 73, or RR73 (not because of a rec'd msg)
@@ -6482,6 +6489,22 @@ namespace WSJTX_Controller
         private bool IsException(string call)
         {
             return ctrl.replyNewDxccCheckBox.Checked && ctrl.exceptTextBox.Text.Contains(call);
+        }
+
+        private int MaxTimeoutsForMsg(bool isWantedNewCountryOnBand, bool isPota)
+        {
+            DebugOutput($"{spacer}isPota:{isPota} isWantedNewCountryOnBand:{isWantedNewCountryOnBand} maxPrevTo:{maxPrevTo} maxPrevPotaTo:{maxPrevPotaTo}");
+            return (isPota || rankMethod == RankMethods.MOST_RECENT) ? maxPrevPotaTo : (isWantedNewCountryOnBand ? maxNewCountryTo : maxPrevTo);
+        }
+
+        //return true if call is (or associated with a previous) "CQ POTA"
+        private bool IsPotaCall(EnqueueDecodeMessage emsg)
+        {
+            if (emsg.IsCQ()) return emsg.IsPota();
+
+            EnqueueDecodeMessage dmsg = CqMsg(emsg.DeCall());
+            if (dmsg == null) return false;         //never a CQ POTA from deCall
+            return dmsg.IsPota();
         }
     }
 }
