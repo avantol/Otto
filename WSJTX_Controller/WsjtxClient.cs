@@ -844,7 +844,7 @@ namespace WSJTX_Controller
             if (ctrl.timedCheckBox.Checked)
             {
                 var dtNow = DateTime.Now;
-                if ((txStopDateTime - dtNow).TotalMinutes - 0.50 > maxTxTimeHrs * 60)       //local
+                if ((txStopDateTime - dtNow).TotalMinutes - 0.5 > maxTxTimeHrs * 60)       //local
                 {
                     DebugOutput($"{spacer}Timed operation Tx duration: {txStopDateTime - dtNow}");
                     HaltTx();
