@@ -375,15 +375,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Otto"
-        "ProductCode" = "8:{5A1D8B3E-FD75-4510-99B6-E614B71AD778}"
-        "PackageCode" = "8:{A7E6B107-891D-47A8-8AC6-16D7724E942F}"
+        "ProductCode" = "8:{CAC0020D-F011-4E0A-815E-F93A1411B0B6}"
+        "PackageCode" = "8:{CCF9C382-DE82-4411-B999-7ADECEDDBF41}"
         "UpgradeCode" = "8:{58863A86-1E9E-4ECA-8AF5-C8BEE7AB4238}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:2.247.0"
+        "ProductVersion" = "8:2.248.0"
         "Manufacturer" = "8:WM8Q"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -925,7 +925,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_13955C8D95C14416A597653571C6CA17"
             {
-            "SourcePath" = "8:..\\WSJTX_Controller\\obj\\Debug\\WSJTX_Controller.exe"
+            "SourcePath" = "8:..\\WSJTX_Controller\\obj\\Release\\WSJTX_Controller.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_F9097703E65145C3AE3E9348ED10AEA6"

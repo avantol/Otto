@@ -843,8 +843,10 @@ namespace WSJTX_Controller
 
             if (ctrl.timedCheckBox.Checked)
             {
-                if ((txStopDateTime - DateTime.Now).TotalMinutes > maxTxTimeHrs * 60)       //local
+                var dtNow = DateTime.Now;
+                if ((txStopDateTime - dtNow).TotalMinutes - 0.50 > maxTxTimeHrs * 60)       //local
                 {
+                    DebugOutput($"{spacer}Timed operation Tx duration: {txStopDateTime - dtNow}");
                     HaltTx();
                     ctrl.ShowMsg($"Timed operation Tx limited to {maxTxTimeHrs} hour duration", true);
                     return;
@@ -4531,7 +4533,7 @@ namespace WSJTX_Controller
         private string CurrentStatus()
         {
             string repDec = (replyDecode == null ? "''" : $"{nl}           {replyDecode}");
-            return $"myCall:'{myCall}' callInProg:'{CallPriorityString(callInProg)}' qsoState:{qsoState} lastQsoState:{lastQsoState} txMsg:'{txMsg}' decodeCycle:{CurrentDecodeCycleString()}{nl}           lastTxMsg:'{lastTxMsg}' curCmd:'{curCmd}' replyCmd:'{replyCmd}' opMode:{opMode} replyDecode:{repDec}{nl}           txTimeout:{txTimeout} restartQueue:{restartQueue} xmitCycleCount:{xmitCycleCount} transmitting:{transmitting} mode:{mode} txEnabled:{txEnabled}{nl}           txFirst:{txFirst} dxCall:'{dxCall}' trPeriod:{trPeriod} settingChanged:{settingChanged}{nl}           newDirCq:{newDirCq} tCall:'{tCall}' decoding:{decoding} paused:{paused} txMode:{txMode}{nl}           autoFreqPauseMode:{autoFreqPauseMode} consecCqCount:{consecCqCount} consecTimeoutCount:{consecTimeoutCount} holdCheckBox.Checked:{ctrl.holdCheckBox.Checked}{nl}{CallQueueString()}";
+            return $"myCall:'{myCall}' callInProg:'{CallPriorityString(callInProg)}' qsoState:{qsoState} lastQsoState:{lastQsoState} txMsg:'{txMsg}' decodeCycle:{CurrentDecodeCycleString()}{nl}           lastTxMsg:'{lastTxMsg}' curCmd:'{curCmd}' replyCmd:'{replyCmd}' opMode:{opMode} replyDecode:{repDec}{nl}           txTimeout:{txTimeout} restartQueue:{restartQueue} xmitCycleCount:{xmitCycleCount} transmitting:{transmitting} mode:{mode} txEnabled:{txEnabled}{nl}           txFirst:{txFirst} dxCall:'{dxCall}' trPeriod:{trPeriod} settingChanged:{settingChanged} wsjtxTxEnableButton:{wsjtxTxEnableButton}{nl}           newDirCq:{newDirCq} tCall:'{tCall}' decoding:{decoding} paused:{paused} txMode:{txMode} timedStartInProgress:{timedStartInProgress}{nl}           autoFreqPauseMode:{autoFreqPauseMode} consecCqCount:{consecCqCount} consecTimeoutCount:{consecTimeoutCount} holdCheckBox.Checked:{ctrl.holdCheckBox.Checked}{nl}{CallQueueString()}";
         }
 
         private void DebugOutputStatus()
@@ -5899,9 +5901,8 @@ namespace WSJTX_Controller
             if (ctrl.timedCheckBox.Enabled && ctrl.timedCheckBox.Checked)
             {
                 DateTime dtNow = DateTime.Now;      //local
-                TimeSpan ts = new TimeSpan(0, 0, (int)(0.5 * (trPeriod / 1000)));       //decode start time is before top of the minute
-                DebugOutput($"{Time()} CheckTimedStartStop, enabled:{ctrl.timedCheckBox.Checked} txStartDateTime(local):{txStartDateTime} ts:{ts} now(local):{dtNow}");
-                if (paused && (dtNow >= txStartDateTime - ts) && !timedStartInProgress)          //local time
+                DebugOutput($"{Time()} CheckTimedStartStop, enabled:{ctrl.timedCheckBox.Checked} txStartDateTime(local):{txStartDateTime} now(local):{dtNow} timedStartInProgress:{timedStartInProgress}");
+                if (paused && (dtNow >= txStartDateTime) && !timedStartInProgress)          //local time
                 {
                     timedStartInProgress = true;              //don't restart until timed operation re-enabled
                     DebugOutput($"{spacer}start Tx time, paused:{paused} txMode:{txMode}");
@@ -5931,8 +5932,8 @@ namespace WSJTX_Controller
                     return;
                 }
 
-                DebugOutput($"{Time()} CheckTimedStartStop, enabled:{ctrl.timedCheckBox.Checked} txStopDateTime(local):{txStopDateTime} ts:{ts} now(local):{dtNow}");
-                if (dtNow >= txStopDateTime - ts)          //local time
+                DebugOutput($"{Time()} CheckTimedStartStop, enabled:{ctrl.timedCheckBox.Checked} txStopDateTime(local):{txStopDateTime} now(local):{dtNow} timedStartInProgress:{timedStartInProgress}");
+                if (dtNow >= txStopDateTime)          //local time
                 {
                     List<EnqueueDecodeMessage> msgList;
                     bool recdAny = false;       //no previous call(s) from DX station
