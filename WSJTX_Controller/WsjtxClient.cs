@@ -66,6 +66,7 @@ namespace WSJTX_Controller
         private List<string> sentCallList = new List<string>();
         private Dictionary<string, List<EnqueueDecodeMessage>> allCallDict = new Dictionary<string, List<EnqueueDecodeMessage>>();            //all calls to this station plus CQs (and replies: grids) processed (no 73)
         private Dictionary<string, int> timeoutCallDict = new Dictionary<string, int>();    //calls sent to myCall immed after timeout
+        private List<string> blockList = new List<string>();
         private bool txEnabled = false;
         private bool txEnabledConf = false;
         private bool wsjtxTxEnableButton = false;
@@ -384,6 +385,8 @@ namespace WSJTX_Controller
             listBoxFontBold = new System.Drawing.Font("Consolas", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             listBoxFontRegular = new Font(Label.DefaultFont, FontStyle.Regular);
             ShowLogged();
+
+            UpdateBlockList(ctrl.exceptTextBox.Text);
 
             UpdateDebug();          //last before starting loop
         }
@@ -1909,6 +1912,13 @@ namespace WSJTX_Controller
                 if (!logList.Contains(deCall))
                 {
                     AddAllCallDict(deCall, dmsg);
+                }
+
+                if (IsBlocked(deCall))
+                {
+                    ctrl.ShowMsg($"{deCall} is blocked)", false);
+                    if (debugDetail) DebugOutput($"{spacer}{deCall} ignored, blocked");
+                    return;
                 }
 
                 DebugOutput($"{spacer}deCall:{deCall} dmsg.Priority:{dmsg.Priority} callQueue.Contains:{callQueue.Contains(deCall)} SentAnyMsg:{SentAnyMsg(deCall)}");
@@ -3759,9 +3769,9 @@ namespace WSJTX_Controller
                     return;
                 }
 
-                if ((isWantedNewCountry || isWantedNewCountryOnBand) && IsException(deCall))
+                if (IsBlocked(deCall))
                 {
-                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, DXCC exception");
+                    if (debugDetail) DebugOutput($"{spacer}AddSelectedCall rejected, call blocked");
                     return;
                 }
 
@@ -3820,7 +3830,7 @@ namespace WSJTX_Controller
                                 DebugOutput($"{spacer}restartQueue:{restartQueue}");
 
                                 if (emsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL
-                                    && !logList.Contains(replyDecode.DeCall()) && !IsException(replyDecode.DeCall())
+                                    && !logList.Contains(replyDecode.DeCall())
                                     && RecdAnyMsg(replyDecode.DeCall()))
                                 {
                                     if (IsCorrectTimePeriodForMode(replyDecode, out dummy))
@@ -3966,6 +3976,7 @@ namespace WSJTX_Controller
                 //DebugOutput($"{nmsg}");
 
                 AddCall(toCall, nmsg);              //add to call queue
+                if (ctrl.ExceptTextBoxRemove(toCall)) ctrl.ShowMsg($"{toCall} unblocked", false);
                 ClearCallTimeout(toCall);
 
                 if (txMode == TxModes.CALL_CQ)                  //if CQing, process this call immediately
@@ -3977,7 +3988,7 @@ namespace WSJTX_Controller
                 }
 
                 if (nmsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL
-                    && !logList.Contains(replyDecode.DeCall()) && !IsException(replyDecode.DeCall())
+                    && !logList.Contains(replyDecode.DeCall()) && !IsBlocked(replyDecode.DeCall())
                     && RecdAnyMsg(replyDecode.DeCall()))
                 {
                     bool dummy;
@@ -4036,7 +4047,7 @@ namespace WSJTX_Controller
                 ClearCallTimeout(deCall);
 
                 if (emsg.Priority < replyDecodePriority && replyDecodePriority <= (int)CallPriority.TO_MYCALL
-                    && !logList.Contains(replyDecode.DeCall()) && !IsException(replyDecode.DeCall())
+                    && !logList.Contains(replyDecode.DeCall()) && !IsBlocked(replyDecode.DeCall())
                     && RecdAnyMsg(replyDecode.DeCall()))
                 {
                     bool dummy;
@@ -4048,6 +4059,7 @@ namespace WSJTX_Controller
                 }
 
                 ClearCallTimeout(deCall);
+                if (ctrl.ExceptTextBoxRemove(deCall)) ctrl.ShowMsg($"{deCall} unblocked", false);
 
                 if (ctrl.callAddedCheckBox.Checked) Play("blip.wav");
             }
@@ -4589,6 +4601,40 @@ namespace WSJTX_Controller
             return sb.ToString();
         }
 
+        public void BlockCall(int idx)
+        {
+            DebugOutput($"{Time()} BlockCall {idx}");
+            if (idx < 0) idx = 0;
+            if (idx >= callQueue.Count) return;
+
+            EnqueueDecodeMessage dmsg = new EnqueueDecodeMessage();
+            string call = PeekCall(idx, out dmsg);
+
+            if (call == null) return;
+
+            if (!IsBlocked(call))
+            {
+                ctrl.ExceptTextBoxAdd(call);       //callqueue updated by BlockedTextChanged()
+                DebugOutput($"{spacer}added  {call} to blocked call list");
+                ctrl.ShowMsg($"{call} is now blocked", ctrl.callAddedCheckBox.Checked);
+            }
+            else
+            {
+                ctrl.ShowMsg($"{call} already blocked", ctrl.callAddedCheckBox.Checked);
+            }
+        }
+
+        public void BlockedTextChanged(string text)
+        {
+            UpdateBlockList(text);
+
+            //remove blocked call(s) from call queue
+            foreach(string call in blockList)
+            {
+                RemoveCall(call);
+            }
+        }
+
         public void NextCall(bool confirm, int idx)         //no confirm, left-dbl-click on call list, or ctrl/N
         {
             DebugOutput($"{Time()} NextCall {idx}");
@@ -4617,7 +4663,7 @@ namespace WSJTX_Controller
                     {
                         HaltTx();
                         Thread.Sleep(500);
-                        SetupCq(true);
+                        SetupCq(txEnabled);
                     }
                     else
                     {
@@ -5101,6 +5147,8 @@ namespace WSJTX_Controller
 
             if (deCall == null || deCall == myCall) return;
 
+            bool unblocked = ctrl.ExceptTextBoxRemove(deCall);       //assumed call is now wanted and not blocked
+
             DisableAutoFreqPause();
             txTimeout = false;          //cancel timeout or settings change, which would start auto CQing
             restartQueue = false;       //cancel timeout or settings change, which would start auto CQing
@@ -5159,7 +5207,8 @@ namespace WSJTX_Controller
             SetCallInProg(deCall);
             RemoveCall(deCall);
             ClearCallTimeout(deCall);
-            ctrl.ShowMsg("Manual call selection", false);
+            string ub = (unblocked ? " and unblocked" : "");
+            ctrl.ShowMsg($"{deCall} selected{ub}", false);
             UpdateDebug();
 
             ctrl.holdCheckBox.Enabled = true;
@@ -6311,7 +6360,7 @@ namespace WSJTX_Controller
 
         private void CheckReAddCall(string call, EnqueueDecodeMessage dmsg)
         {
-            if (call == null || call == tCall || dmsg == null || logList.Contains(call) || IsException(call)) return;        //done with call
+            if (call == null || call == tCall || dmsg == null || logList.Contains(call) || IsBlocked(call)) return;        //done with call
 
             //TO-DO: get call time from WSJT-X
             if (replyDecode.SinceMidnight.Days == 1)
@@ -6487,9 +6536,9 @@ namespace WSJTX_Controller
             return ctrl.replyNewDxccCheckBox.Checked && ctrl.replyNewOnlyCheckBox.Checked;
         }
 
-        private bool IsException(string call)
+        private bool IsBlocked(string call)
         {
-            return ctrl.replyNewDxccCheckBox.Checked && ctrl.exceptTextBox.Text.Contains(call);
+            return blockList.Contains(call);
         }
 
         private int MaxTimeoutsForMsg(bool isWantedNewCountryOnBand, bool isPota)
@@ -6506,6 +6555,11 @@ namespace WSJTX_Controller
             EnqueueDecodeMessage dmsg = CqMsg(emsg.DeCall());
             if (dmsg == null) return false;         //never a CQ POTA from deCall
             return dmsg.IsPota();
+        }
+
+        private void UpdateBlockList(string text)
+        {
+            blockList = text.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList<string>();
         }
     }
 }

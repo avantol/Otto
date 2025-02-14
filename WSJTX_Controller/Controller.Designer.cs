@@ -147,6 +147,7 @@
             this.PriorityHelpLabel = new System.Windows.Forms.Label();
             this.optionsButton = new System.Windows.Forms.Button();
             this.guideLabel = new System.Windows.Forms.Label();
+            this.blockHelpLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.timeoutNumUpDown)).BeginInit();
             this.modeGroupBox.SuspendLayout();
             this.SuspendLayout();
@@ -748,7 +749,6 @@
             // 
             // exceptTextBox
             // 
-            this.exceptTextBox.Enabled = false;
             this.exceptTextBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.exceptTextBox.ForeColor = System.Drawing.SystemColors.WindowText;
             this.exceptTextBox.Location = new System.Drawing.Point(120, 344);
@@ -756,7 +756,10 @@
             this.exceptTextBox.Size = new System.Drawing.Size(155, 20);
             this.exceptTextBox.TabIndex = 67;
             this.exceptTextBox.Visible = false;
+            this.exceptTextBox.TextChanged += new System.EventHandler(this.exceptTextBox_TextChanged);
+            this.exceptTextBox.Enter += new System.EventHandler(this.exceptTextBox_Enter);
             this.exceptTextBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.exceptTextBox_KeyPress);
+            this.exceptTextBox.Leave += new System.EventHandler(this.exceptTextBox_Leave);
             // 
             // label1
             // 
@@ -1130,11 +1133,11 @@
             // 
             this.exceptLabel.AutoSize = true;
             this.exceptLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.exceptLabel.Location = new System.Drawing.Point(31, 346);
+            this.exceptLabel.Location = new System.Drawing.Point(17, 346);
             this.exceptLabel.Name = "exceptLabel";
-            this.exceptLabel.Size = new System.Drawing.Size(88, 13);
+            this.exceptLabel.Size = new System.Drawing.Size(94, 13);
             this.exceptLabel.TabIndex = 57;
-            this.exceptLabel.Text = "except call signs:";
+            this.exceptLabel.Text = "Block any reply to:";
             this.exceptLabel.Visible = false;
             // 
             // logListBox
@@ -1530,12 +1533,27 @@
             this.guideLabel.Text = "Quick-start setup";
             this.guideLabel.Click += new System.EventHandler(this.guideLabel_Click);
             // 
+            // blockHelpLabel
+            // 
+            this.blockHelpLabel.AutoSize = true;
+            this.blockHelpLabel.BackColor = System.Drawing.SystemColors.Control;
+            this.blockHelpLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.blockHelpLabel.ForeColor = System.Drawing.Color.Blue;
+            this.blockHelpLabel.Location = new System.Drawing.Point(278, 348);
+            this.blockHelpLabel.Name = "blockHelpLabel";
+            this.blockHelpLabel.Size = new System.Drawing.Size(14, 13);
+            this.blockHelpLabel.TabIndex = 106;
+            this.blockHelpLabel.Text = "?";
+            this.blockHelpLabel.Visible = false;
+            this.blockHelpLabel.Click += new System.EventHandler(this.blockHelpLabel_Click);
+            // 
             // Controller
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(301, 785);
+            this.Controls.Add(this.blockHelpLabel);
             this.Controls.Add(this.replyNewOnlyCheckBox);
             this.Controls.Add(this.guideLabel);
             this.Controls.Add(this.optionsButton);
@@ -1792,6 +1810,7 @@
         public System.Windows.Forms.Label PriorityHelpLabel;
         public System.Windows.Forms.Button optionsButton;
         private System.Windows.Forms.Label guideLabel;
+        public System.Windows.Forms.Label blockHelpLabel;
     }
 }
 

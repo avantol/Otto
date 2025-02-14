@@ -23,7 +23,7 @@ namespace WSJTX_Controller
     public partial class Controller : Form
     {
         public WsjtxClient wsjtxClient;
-        private Guide guide;
+        public Guide guide;
         public bool alwaysOnTop = false;
         public bool firstRun = true;        //first run for each user level
         public bool skipLevelPrompt = false;
@@ -33,7 +33,7 @@ namespace WSJTX_Controller
         private SetupDlg setupDlg = null;
         private HelpDlg helpDlg = null;
         private IniFile iniFile = null;
-        private const int minSkipCount = 1;
+        private int minSkipCount = 1;
         private const int maxSkipCount = 20;
         private const string separateBySpaces = "(separate by spaces)";
         private bool showCloseMsgs = true;
@@ -47,6 +47,7 @@ namespace WSJTX_Controller
         private List<Control> hideCtrls;
         private int optionsOffset;
         private string helpSuffix = " Help";
+        private bool ignoreExceptChange = false;
 
     private System.Windows.Forms.Timer mainLoopTimer;
 
@@ -210,8 +211,8 @@ namespace WSJTX_Controller
                 for (int scnIdx = 0; scnIdx < screens.Length; scnIdx++)
                 {
                     var screenBounds = screens[scnIdx].Bounds;
-                    var formRect = new Rectangle(new Point(x + screenBounds.Location.X, y + screenBounds.Location.Y), this.Bounds.Size);
-                    if (screenBounds.IntersectsWith(formRect))
+                    var centerPt = new Point(x + (this.Width / 2), y + (this.Height / 2));
+                    if (screenBounds.Contains(centerPt))
                     {
                         found = true;       //found screen for window posn
                         break;
@@ -308,6 +309,7 @@ namespace WSJTX_Controller
                 freqCheckBox.Checked = false;
                 optimizeCheckBox.Checked = false;
                 holdCheckBox.Checked = false;
+                minSkipCount = 2;
             }
 
             if (showTxModes)
@@ -336,10 +338,10 @@ namespace WSJTX_Controller
                 alertTextBox.Text = separateBySpaces;
             }
 
-            exceptTextBox.Enabled = replyNewDxccCheckBox.Checked;
-            if (!exceptTextBox.Enabled && exceptTextBox.Text == "")
+            if (exceptTextBox.Text == "")
             {
                 exceptTextBox.Text = separateBySpaces;
+                exceptTextBox.ForeColor = Color.Gray;
             }
 
             UpdateTxLabel();
@@ -613,19 +615,11 @@ namespace WSJTX_Controller
 
         private void replyNewDxccCheckBox_CheckedChanged(object sender, EventArgs e)
         {
-            exceptTextBox.Enabled = replyNewDxccCheckBox.Checked;
             updateReplyNewOnlyCheckBoxEnabled();
 
             if (replyNewDxccCheckBox.Checked && (replyDxCheckBox.Checked || replyLocalCheckBox.Checked || replyDirCqCheckBox.Checked)) replyNewOnlyCheckBox.Checked = false;
 
             if (!formLoaded) return;
-
-            if (replyNewDxccCheckBox.Checked && exceptTextBox.Text == separateBySpaces)
-            {
-                exceptTextBox.Clear();
-                exceptTextBox.ForeColor = System.Drawing.Color.Black;
-            }
-            if (!replyNewDxccCheckBox.Checked && exceptTextBox.Text == "") exceptTextBox.Text = separateBySpaces;
 
             CheckManualSelection();
 
@@ -763,6 +757,7 @@ namespace WSJTX_Controller
             includeLabel.Visible = true;
             rankComboBox.Visible = true;
             guideLabel.Visible = true;
+            blockHelpLabel.Visible = true;
 
             wsjtxClient.advanced = true;
             wsjtxClient.UpdateModeVisible();
@@ -847,6 +842,7 @@ namespace WSJTX_Controller
             guide = new Guide(wsjtxClient, this);
             //if ((bool)guideTimer.Tag) ;
             guide.Show();
+            if (wsjtxClient.advanced && !wsjtxClient.showTxModes) firstRun = false;     //prevent showing guide automatically later
         }
 
         public void GuideClosed()
@@ -870,20 +866,20 @@ namespace WSJTX_Controller
                 $"{nl}- CQs matching 'Reply to directed CQs'*" +
                 $"{nl}- Calls matching 'Reply to new calls', ranked by the selected 'Reply priority'." +
                 $"{nl}{nl}(*ranked in the order received, within each type)" +
-                $"{nl}{nl}To manually add more call signs to the reply list:" +
+                $"{nl}{nl}To manually add more call signs to the 'Calls waiting reply' list:" +
                 $"{nl}- Press and hold the 'Alt' key, then" +
                 $"{nl}- Double-click on the line containing the desired 'from' call sign in the WSJT-X 'Band Activity' list." +
-                $"{nl}{nl}To remove a call sign from the reply list:" +
+                $"{nl}{nl}To remove a call sign from the 'Calls waiting reply' list:" +
                 $"{nl}- Right-click on the call, then confirm." +
-                $"{nl}{nl}To reply to any call from the reply list:" +
+                $"{nl}{nl}To reply to any call from the 'Calls waiting reply' list:" +
                 $"{nl}- Double-click on the call." +
-                $"{nl}{nl}To cancel the current call when the reply list is empty:" +
+                $"{nl}{nl}To cancel the current call when the 'Calls waiting reply' list is empty:" +
                 $"{nl}- Double-click on the reply list box." +
                 $"{nl}{nl}When you double-click on a call in the WSJT-X 'Band Activity list *without* using the 'Alt' key:" +
-                $"{nl}- This causes an immediate reply, instead of placing the call on a list of calls to reply to." +
+                $"{nl}- This causes an immediate reply, instead of placing the call on the 'Calls waiting reply' list." +
                 $"{nl}- Automatic operation continues after this call is processed." +
                 $"{nl}{nl}Note:" +
-                $"{nl}- If 'Reply priority' is set to 'Best for ... beam', calls that are off the nominal azimuth by more than {WsjtxClient.beamWidth / 2} degrees are not added to the reply list." +
+                $"{nl}- If 'Reply priority' is set to 'Best for ... beam', calls that are off the nominal azimuth by more than {WsjtxClient.beamWidth / 2} degrees are not added to the 'Calls waiting reply' list." +
                 $"{nl}- The '*' symbol denotes a call from a new country." +
                 $"{nl}{nl}You can leave this dialog open while you try out these hints.");
         }
@@ -902,7 +898,7 @@ namespace WSJTX_Controller
 
         private void IncludeHelpLabel_Click(object sender, EventArgs e)
         {
-            ShowHelp($"The 'Reply to new calls' section allows you to choose which messages from new callers you want to add to the reply list." +
+            ShowHelp($"The 'Reply to new calls' section allows you to choose which messages from new callers you want to add to the 'Calls waiting reply' list." +
                 $"{nl}{nl}- Select 'CQ' if you want to reply only to CQ messages." +
                 $"{nl}- Select 'CQ/grid' if you want to reply only to messages with grid information, allowing you to prioritize calls based on distance or azimuth." +
                 $"{nl}- Select 'any' to reply to any message." +
@@ -958,7 +954,7 @@ namespace WSJTX_Controller
             wsjtxClient.UpdateMaxAutoGenEnqueue();
             string continent = wsjtxClient.myContinent == null ? "" : $" '{wsjtxClient.myContinent}'";
             string onBand = $"{bandComboBox.Items[1]}";
-            ShowHelp($"{friendlyName} will add up to {wsjtxClient.maxAutoGenEnqueue} calls to the reply list that meet these conditions:" +
+            ShowHelp($"{friendlyName} will add up to {wsjtxClient.maxAutoGenEnqueue} calls to the 'Calls waiting reply' list that meet these conditions:" +
                 $"{nl}{nl}- The call has not been worked before 'for 1 band' or '{onBand}'." +
                 $"{nl}- The call is 'DX' or originated in your continent{continent}." +
                 $"{nl}- The received message can be" +
@@ -989,7 +985,7 @@ namespace WSJTX_Controller
                 $"{nl}    Ctrl+O:  Show/hide complete Options" +
                 $"{nl}    Ctrl+C:  Call CQ" +
                 $"{nl}    Ctrl+L:  Listen for calls" +
-                $"{nl}    Ctrl+D:  Delete reply list" +
+                $"{nl}    Ctrl+D:  Delete 'Calls waiting reply' list" +
                 $"{nl}    Ctrl+N:  Skip to next call (cancel if none)" +
                 $"{nl}    Alt+C:  Configuration");
         }
@@ -1124,7 +1120,7 @@ namespace WSJTX_Controller
                 $"{nl}{nl}This option is intended ONLY when replying to difficult stations that are likely to have many competing callers, like DXpeditions. It's NOT suitable at all for working the more common DX entities!" +
                 $"{nl}{nl}If a call sign is from a country never worked before on any band, {friendlyName} will sound an audio notification and 'hold' (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeat} times." +
                 $"{nl}{nl}If a call sign is from a country not worked before on the current band, {friendlyName} will sound an audio notification and 'hold' (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeatNewOnBand} times." +
-                $"{nl}{nl}If a station never replies or won't confirm QSOs conveniently, you can add that call sign to the 'Except' list, and it will be ignored.{s}" +
+                $"{nl}{nl}If a station never replies or won't confirm QSOs conveniently, you can add that call sign to the 'Block any reply' list, and it will be ignored.{s}" +
                 $"{nl}{nl}If you don't select 'Reply to new DXCC', you will still be able to reply automatically to messages from new countries, just with the normal number of Tx repeats.");
         }
 
@@ -1162,6 +1158,16 @@ namespace WSJTX_Controller
         {
             ShowHelp($"The Tx audio frequency is automatically set to an unused part of the audio spectrum." +
                 $"{nl}{nl}After a period of no replies being received, transmitting is temporarily suspended for one Tx cycle, the received audio is re-sampled, and the best Tx frequency is re-calculated.");
+        }
+
+        private void blockHelpLabel_Click(object sender, EventArgs e)
+        {
+            ShowHelp($"To block any automatic replies to a specific call sign:" +
+                $"{nl}{nl}If the call sign is in the 'Calls waiting reply' list:" +
+                $"{nl}- Hold the 'Ctrl' key down and click on the call sign." +
+                $"{nl}{nl}Otherwise," +
+                $"{nl}- Enter the call sign in the 'Block any reply' box, with each call sign separated by a space." +
+                $"{nl}{nl}Note: If you manually select a blocked call, it will be unblocked to allow replies.");
         }
 
         private void callAddedCheckBox_CheckedChanged(object sender, EventArgs e)
@@ -1537,7 +1543,7 @@ namespace WSJTX_Controller
 
                     if (Control.ModifierKeys == Keys.Control)
                     {
-                        //available for ctrl/left-click action
+                        wsjtxClient.BlockCall(idx);
                     }
                 }
             }
@@ -1701,6 +1707,69 @@ namespace WSJTX_Controller
         private void replyRR73CheckBox_CheckedChanged(object sender, EventArgs e)
         {
             if (formLoaded) wsjtxClient.ReplyRR73Changed(replyRR73CheckBox.Checked);
+        }
+
+        private void exceptTextBox_TextChanged(object sender, EventArgs e)
+        {
+            if (!formLoaded) return;
+
+            if (exceptTextBox.Text == separateBySpaces || exceptTextBox.Text.Trim() == "" || ignoreExceptChange) return;
+            wsjtxClient.BlockedTextChanged(exceptTextBox.Text);
+        }
+
+        public bool ExceptTextBoxRemove(string call)
+        {
+            if (call == null || !exceptTextBox.Text.Contains(call)) return false;
+
+            exceptTextBox_Enter(null, null);
+            exceptTextBox.Text = exceptTextBox.Text.Replace(call, "");      //triggers exceptTextBox_TextChanged()
+            exceptTextBox_Leave(null, null);
+            return true;
+        }
+
+        public void ExceptTextBoxAdd(string call)
+        {
+            //call known to be non-null
+            exceptTextBox_Enter(null, null);
+            exceptTextBox.Text = $"{call} {exceptTextBox.Text}";      //triggers exceptTextBox_TextChanged()
+            exceptTextBox_Leave(null, null);
+        }
+
+        private void exceptTextBox_Enter(object sender, EventArgs e)
+        {
+            if (!formLoaded) return;
+
+            exceptTextBox.ForeColor = Color.Black;
+            if (exceptTextBox.Text == separateBySpaces)
+            {
+                exceptTextBox.Text = "";
+            }
+        }
+
+        private void exceptTextBox_Leave(object sender, EventArgs e)
+        {
+            if (!formLoaded) return;
+
+            exceptTextBox.ForeColor = Color.Black;
+
+            StringBuilder sb = new StringBuilder();
+            string sep = "";
+            var blockedCalls = exceptTextBox.Text.Trim().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList<string>();
+            foreach (string call in blockedCalls)
+            {
+                sb.Append($"{sep}{call}");
+                sep = " ";
+            }
+
+            ignoreExceptChange = true;
+            exceptTextBox.Text = sb.ToString();
+            ignoreExceptChange = false;
+
+            if (exceptTextBox.Text == "")
+            {
+                exceptTextBox.Text = separateBySpaces;
+                exceptTextBox.ForeColor = Color.Gray;
+            }
         }
     }
 }
