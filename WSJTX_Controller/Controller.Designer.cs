@@ -178,9 +178,9 @@
             this.loggedLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.loggedLabel.Location = new System.Drawing.Point(207, 6);
             this.loggedLabel.Name = "loggedLabel";
-            this.loggedLabel.Size = new System.Drawing.Size(67, 13);
+            this.loggedLabel.Size = new System.Drawing.Size(60, 13);
             this.loggedLabel.TabIndex = 8;
-            this.loggedLabel.Text = "Auto-logged:";
+            this.loggedLabel.Text = "Completed:";
             // 
             // callLabel
             // 
@@ -1552,7 +1552,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(301, 785);
+            this.ClientSize = new System.Drawing.Size(301, 749);
             this.Controls.Add(this.blockHelpLabel);
             this.Controls.Add(this.replyNewOnlyCheckBox);
             this.Controls.Add(this.guideLabel);

@@ -9,7 +9,7 @@ using System.Text;
 namespace WsjtxUdpLib.Messages
 {
     /*
-     * Enable Tx     In        16
+     * Enable Tx     In        16 if schema version 2 (17 if schema version 3)
      *                         Id (unique key)        utf8
      *                         Next Tx Msg Index      UInt32
      *                         Generated Message      utf8
@@ -67,7 +67,8 @@ namespace WsjtxUdpLib.Messages
                 {
                     writer.Write(WsjtxMessage.MagicNumber);
                     writer.Write(EncodeQUInt32(SchemaVersion));
-                    writer.Write(EncodeQUInt32(16));    //msg type
+                    uint msgType = WSJTX_Controller.WsjtxClient.IsWsjtx270Rc() ? (uint)MessageType.ENABLE_TX_MESSAGE_TYPE_2 : (uint)MessageType.ENABLE_TX_MESSAGE_TYPE_3;
+                    writer.Write(EncodeQUInt32(msgType));    //msg type
                     writer.Write(EncodeString(Id));
                     writer.Write(EncodeQUInt32((UInt32)NewTxMsgIdx));
                     writer.Write(EncodeString(GenMsg));

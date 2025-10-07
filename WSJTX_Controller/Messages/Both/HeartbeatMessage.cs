@@ -83,7 +83,7 @@ namespace WsjtxUdpLib.Messages
                 {
                     writer.Write(WsjtxMessage.MagicNumber);
                     writer.Write(EncodeQUInt32((UInt32)SchemaVersion));
-                    writer.Write(EncodeQUInt32(0));    //msg type
+                    writer.Write(EncodeQUInt32((UInt32)MessageType.HEARTBEAT_MESSAGE_TYPE));    //msg type
                     writer.Write(EncodeString(Id));
                     writer.Write(EncodeQUInt32((UInt32)MaxSchemaNumber));
                     writer.Write(EncodeString(Version));

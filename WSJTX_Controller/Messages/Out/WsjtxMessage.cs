@@ -14,7 +14,7 @@ namespace WsjtxUdpLib.Messages.Out
         public static string UniqueId = "ExtCtl";
         public static string PgmRevision = "abcdef";
         public static string PgmVersion = "1.0.0";
-        public static int PgmSchemaVersion = 3;
+        public static int PgmSchemaVersion = 3;             //highest schema version acceptable
         private static int maxBaseCallsignLength = 10;
         private static int maxCallDigits = 3;
 
@@ -389,7 +389,8 @@ namespace WsjtxUdpLib.Messages.Out
                     {
                         result = DecodeMessage.Parse(datagram);
                     }
-                    else if (messageType == MessageType.ENQUEUE_DECODE_MESSAGE_TYPE)
+                    else if ((!WSJTX_Controller.WsjtxClient.IsWsjtx270Rc() && messageType == MessageType.ENQUEUE_DECODE_MESSAGE_TYPE_3) 
+                        || (WSJTX_Controller.WsjtxClient.IsWsjtx270Rc() && messageType == MessageType.ENQUEUE_DECODE_MESSAGE_TYPE_2))
                     {
                         result = EnqueueDecodeMessage.Parse(datagram);
                     }

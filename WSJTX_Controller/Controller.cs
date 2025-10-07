@@ -650,6 +650,11 @@ namespace WSJTX_Controller
         {
             SuspendLayout();
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            label2.Visible = wsjtxClient.debug;
+            label5.Visible = wsjtxClient.debug;
+            label7.Visible = wsjtxClient.debug;
+            label13.Visible = wsjtxClient.debug;
+            label28.Visible = wsjtxClient.debug;
             if (wsjtxClient.debug)
             {
 #if DEBUG

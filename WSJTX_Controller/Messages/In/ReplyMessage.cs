@@ -81,7 +81,7 @@ namespace WsjtxUdpLib.Messages
                 {
                     writer.Write(WsjtxMessage.MagicNumber);
                     writer.Write(EncodeQUInt32((UInt32)SchemaVersion));
-                    writer.Write(EncodeQUInt32(4));    //msg type
+                    writer.Write(EncodeQUInt32((UInt32)MessageType.REPLY_MESSAGE_TYPE));    //msg type
                     writer.Write(EncodeString(Id));
                     writer.Write(EncodeQTime(SinceMidnight));
                     writer.Write(EncodeQInt32(Snr));

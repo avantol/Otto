@@ -55,7 +55,6 @@ C:\Users\John\source\repos\Otto\WSJTX_Controller\bin\Release\Resources\BeepBeep.
 C:\Users\John\source\repos\Otto\WSJTX_Controller\bin\Release\WSJTX_Controller.exe.config
 C:\Users\John\source\repos\Otto\WSJTX_Controller\bin\Release\WSJTX_Controller.exe
 C:\Users\John\source\repos\Otto\WSJTX_Controller\bin\Release\WSJTX_Controller.pdb
-C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.csproj.AssemblyReference.cache
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.ConfirmDlg.resources
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.Properties.Resources.resources
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.Controller.resources
@@ -66,3 +65,4 @@ C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.ex
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.pdb
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.Guide.resources
 C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.HelpDlg.resources
+C:\Users\John\source\repos\Otto\WSJTX_Controller\obj\Release\WSJTX_Controller.csprojAssemblyReference.cache

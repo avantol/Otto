@@ -365,7 +365,8 @@ namespace WsjtxUdpLib.Messages.Out
 
             var messageType = (MessageType)DecodeQInt32(message, ref cur);
 
-            if (messageType != MessageType.ENQUEUE_DECODE_MESSAGE_TYPE)
+            if ((WSJTX_Controller.WsjtxClient.IsWsjtx270Rc() && messageType != MessageType.ENQUEUE_DECODE_MESSAGE_TYPE_2)
+                || (!WSJTX_Controller.WsjtxClient.IsWsjtx270Rc() && messageType != MessageType.ENQUEUE_DECODE_MESSAGE_TYPE_3))
             {
                 return null;
             }

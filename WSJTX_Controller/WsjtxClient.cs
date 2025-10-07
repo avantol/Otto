@@ -42,7 +42,7 @@ namespace WSJTX_Controller
 
         private string nl = Environment.NewLine;
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/174", "2.7.0/185" };
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "3.0.0-rc1/100", "3.0.0-rc1/101" };
         private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevTo = 2;
@@ -134,6 +134,8 @@ namespace WSJTX_Controller
         private static uint defaultAudioOffset = 1500;
         private string failReason = "Failure reason: Unknown";
         public static int beamWidth = 90;
+        public static int wsjtxRevision;
+        public static int lastWsjtx270RcRevision = 185;
 
         public const int maxQueueLines = 7, maxQueueWidth = 19, maxLogWidth = 9;
         private byte[] ba;
@@ -204,6 +206,11 @@ namespace WSJTX_Controller
 
         public TxModes txMode;
         private TxModes lastTxModeDebug;
+
+        public static bool IsWsjtx270Rc()
+        {
+            return WSJTX_Controller.WsjtxClient.wsjtxRevision == WSJTX_Controller.WsjtxClient.lastWsjtx270RcRevision;
+        }
 
         private struct UdpState
         {
@@ -297,7 +304,7 @@ namespace WSJTX_Controller
             string allVer = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
             Version v;
             Version.TryParse(allVer, out v);
-            string fileVer = $"{v.Major}.{v.Minor}.{v.Build}";
+            string fileVer = $"{v.Major}.{v.Minor}";
             WsjtxMessage.PgmVersion = fileVer;
             debug = reqDebug;
             opMode = OpModes.IDLE;              //wait for WSJT-X running to read its .INI
@@ -1128,7 +1135,9 @@ namespace WSJTX_Controller
                 ctrl.initialConnFaultTimer.Stop();             //stop connection fault dialog
                 HeartbeatMessage imsg = (HeartbeatMessage)msg;
                 DebugOutput($"{Time()}{nl}{imsg}");
-                curVerBld = $"{imsg.Version}/{imsg.Revision}";
+                string rev = imsg.Revision.Split(' ')[0];       //may contain other info, including URL
+                int.TryParse(rev, out wsjtxRevision);
+                curVerBld = $"{imsg.Version}/{rev}";
                 if (!acceptableWsjtxVersions.Contains(curVerBld))
                 {
                     heartbeatRecdTimer.Stop();
@@ -1152,7 +1161,6 @@ namespace WSJTX_Controller
                     var tmsg = new HeartbeatMessage();
                     tmsg.SchemaVersion = WsjtxMessage.PgmSchemaVersion;
                     tmsg.MaxSchemaNumber = (uint)WsjtxMessage.PgmSchemaVersion;
-                    tmsg.SchemaVersion = WsjtxMessage.PgmSchemaVersion;
                     tmsg.Id = WsjtxMessage.UniqueId;
                     tmsg.Version = WsjtxMessage.PgmVersion;
                     tmsg.Revision = WsjtxMessage.PgmRevision;
@@ -1342,7 +1350,7 @@ namespace WSJTX_Controller
                 emsg.CmdCheck = cmdCheck;
                 ba = emsg.GetBytes();
                 udpClient2.Send(ba, ba.Length);
-                //DebugOutput($"{Time()} >>>>>Sent 'Ack Req' cmd:7 cmdCheck:{cmdCheck}{nl}{emsg}");
+                DebugOutput($"{Time()} >>>>>Sent 'Ack Req' cmd:7 cmdCheck:{cmdCheck}{nl}{emsg}");
 
                 heartbeatRecdTimer.Stop();
                 if (!debug)
@@ -1441,8 +1449,10 @@ namespace WSJTX_Controller
                         var items = smsg.Check.Split(new char[] { ',' });       //country may be empty string
                         if (items.Count() >= 7)
                         {
+                            bool? isEven = null;
+                            if (items.Count() >= 8 && items[7] != "-1") isEven = (items[7] == "1");
                             DebugOutput($"{spacer}cmdCheck: call:{items[0]} newCall:{items[1]} newCallOnBand:{items[2]} newCountryOnBand:{items[3]} newCountry:{items[4]} country:{items[5]} continent:{items[6]}");
-                            ProcessDblClick(items[0], items[3] == "1", items[4] == "1", items[5]); //call, newCountryOnBand, newCountry
+                            ProcessDblClick(items[0], items[3] == "1", items[4] == "1", items[5], items[6], isEven); //call, newCountryOnBand, newCountry
                         }
                         dblClk = false;
                     }
@@ -2470,8 +2480,7 @@ namespace WSJTX_Controller
             var dtNow = DateTime.UtcNow;
             SetTxStartInfo(dtNow, toCall);
 
-            //TO-DO: get actual call time from WSJT-X
-            //update replyDecode time as a workaround
+            //update replyDecode time if unknown
             if (replyDecode != null && toCall == replyDecode.DeCall() && replyDecode.SinceMidnight.Days == 1)
             {
                 int period = (int)(trPeriod / 1000);
@@ -2526,8 +2535,7 @@ namespace WSJTX_Controller
             DebugOutput($"{nl}{Time()} WSJT-X event, Tx end: toCall:'{toCall}' lastToCall:'{lastToCall}' deCall:'{deCall}' cmdToCall:'{cmdToCall}'");
             DebugOutput($"{spacer}toCallTxStart:{toCallTxStart} decodesProcessed:{decodesProcessed} txEndTime:{txEndTime.ToString("HHmmss.fff")} maxTxRepeat:{maxTxRepeat}");
 
-            //TO-DO: get actual call time from WSJT-X
-            //update replyDecode time as a workaround
+            //update replyDecode time if unknown
             if (replyDecode != null && toCall == replyDecode.DeCall() && replyDecode.SinceMidnight.Days == 1)
             {
                 int period = (int)(trPeriod / 1000);
@@ -4009,7 +4017,7 @@ namespace WSJTX_Controller
                 bool tmpTxFirst = txFirst;
                 if (!IsCorrectTimePeriodForMode(emsg, out tmpTxFirst))
                 {
-                    string s = tmpTxFirst ? "odd" : "even";
+                    string s = tmpTxFirst ? "even" : "odd";         //avt 8/5/25
                     string m = ((txMode == TxModes.CALL_CQ && showTxModes) ? " (or use 'Listen')" : ((txMode == TxModes.LISTEN && ctrl.periodComboBox.SelectedIndex == (int)ListenModeTxPeriods.ANY) ? (callQueue.Count > 0 ? " (until call list empty)" : " (QSO in progress)") : ""));
                     ctrl.ShowMsg($"Select in '{s}' period{m}", true);
                     return;
@@ -4308,6 +4316,7 @@ namespace WSJTX_Controller
             ResetOpMode();
 
             emsg.NewTxMsgIdx = 7;
+            //emsg.SchemaVersion = (uint)WsjtxMessage.NegotiatedSchemaVersion;
             emsg.GenMsg = $"";          //no effect
             emsg.ReplyReqd = true;
             emsg.EnableTimeout = !debug;
@@ -4502,7 +4511,7 @@ namespace WSJTX_Controller
             emsg.CmdCheck = "";
 
             if (ctrl.loggedCheckBox.Checked) Play("echo.wav");
-            ctrl.ShowMsg($"Logging QSO with {call}", false);
+            ctrl.ShowMsg($"Logged QSO with {call}", false);
             logList.Add(call);      //even if already logged this mode/band for this session
             if (isPota) AddPotaLogDict(call, DateTime.Now, band, mode);         //local date/time
             ShowLogged();
@@ -5139,7 +5148,7 @@ namespace WSJTX_Controller
             }
         }
 
-        private void ProcessDblClick(string deCall, bool isNewCountryOnBand, bool isNewCountry, string country)
+        private void ProcessDblClick(string deCall, bool isNewCountryOnBand, bool isNewCountry, string country, string continent, bool? isEven)
         {
             //marker1
             //manual operation started
@@ -5165,20 +5174,29 @@ namespace WSJTX_Controller
                 if (isNewCountry) priority = (int)CallPriority.NEW_COUNTRY;
             }
 
-            //TO-DO: get call time directly from WSJT-X
-            //attempt to determine a message time for the correct period, as a workaround
-            var sinceMidnight = new TimeSpan(1, 0, 0, 0);     //assume not found: use dummy value, to be updated 
-            DebugOutput($"{spacer}set SinceMidnight to dummy value");
-            EnqueueDecodeMessage msg = null;
-            List<EnqueueDecodeMessage> msgList;
-            if (allCallDict.TryGetValue(deCall, out msgList))
+            TimeSpan sinceMidnight;
+            if (isEven == null)
             {
-                if (msgList.Count > 0)
+                //call time not known by WSJT-X
+                //attempt to determine a message time for the correct period, as a workaround
+                sinceMidnight = new TimeSpan(1, 0, 0, 0);     //assume not found: use dummy value, to be updated 
+                DebugOutput($"{spacer}set SinceMidnight to dummy value");
+                EnqueueDecodeMessage msg = null;
+                List<EnqueueDecodeMessage> msgList;
+                if (allCallDict.TryGetValue(deCall, out msgList))
                 {
-                    msg = msgList.Last();       //list is in chronological order, latest at end
-                    sinceMidnight = msg.SinceMidnight;
-                    DebugOutput($"{spacer}found SinceMidnight from latest message");
+                    if (msgList.Count > 0)
+                    {
+                        msg = msgList.Last();       //list is in chronological order, latest at end
+                        sinceMidnight = msg.SinceMidnight;
+                        DebugOutput($"{spacer}found SinceMidnight from latest message");
+                    }
                 }
+            }
+            else
+            {
+                int sec = (isEven == true) ? 0 : (int)trPeriod / 1000;
+                sinceMidnight = sinceMidnight = new TimeSpan(0, 0, 0, sec);
             }
 
             replyCmd = $"CQ {deCall}";      //fake a new reply cmd, last reply cmd sent is no longer in effect
@@ -5198,8 +5216,7 @@ namespace WSJTX_Controller
             replyDecode.RxDate = latestDecodeDate;  //not accurate
             replyDecode.Priority = priority;
             replyDecode.Country = EnqueueDecodeMessage.WsjtxCountry(country);
-            //TO-DO: WSJT-X should fill in continent
-            //replyDecode.Continent = continent;
+            replyDecode.Continent = continent;
             replyDecode.SequenceNumber = NextMsgSeqNum();
 
             //if (!txEnabled) EnableTx();         //tx often disabled when in LISTEN mode
@@ -5867,7 +5884,8 @@ namespace WSJTX_Controller
         {
             string file = "WSJT-X.lock";
             string pathFileNameExt = $"{Path.GetTempPath()}{file}";
-            return File.Exists(pathFileNameExt);
+            //string linuxPathFileNameExt = "Z:\\tmp\\WSJT-X.lock";     //wine/linux testing
+            return File.Exists(pathFileNameExt) /*|| File.Exists(linuxPathFileNameExt)*/;     //wine/linux testing
         }
 
         //must call only when in WAIT state
@@ -6362,7 +6380,7 @@ namespace WSJTX_Controller
         {
             if (call == null || call == tCall || dmsg == null || logList.Contains(call) || IsBlocked(call)) return;        //done with call
 
-            //TO-DO: get call time from WSJT-X
+            //call period is unknown
             if (replyDecode.SinceMidnight.Days == 1)
             {
                 DebugOutput($"{spacer}unable to re-add call, SinceMidnight is dummy value");
