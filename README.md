@@ -31,8 +31,8 @@
 <br>- gain a huge advantage in QSOs with new DXCCs and DXpeditions by instantly and persistently replying 
 <br><br>Tips:
 <br><br>Otto and the modified WSJT-X program run as a "versioned" pair, and Otto checks for the correct WSJT-X version when it starts. Be sure to download and install both programs!
-<br><br>If you already have another WSJT-X version installed: You can install the required (modified) WSJT-X 2.7.0 program in an alternate destination folder if you like. Neither WSJT-X version will interfere with the other, and they share the same settings and preferences... convenient!
-<br><br>When Otto is not running, the modified WSJT-X 2.7.0 "forgets" its modifications and runs like the standard unmodified version. 
+<br><br>If you already have another WSJT-X version installed: You can install the required (modified) WSJT-X (v3.0.0 RC1 or v2.7.0 GA) program in an alternate destination folder if you like. Neither WSJT-X version will interfere with the other, and they share the same settings and preferences... convenient!
+<br><br>When Otto is not running, the modified WSJT-X (3.0.0 RC1 or 2.7.0 GA) "forgets" its modifications and runs like the standard unmodified version. 
 <br><br>The UDP address/port for the WSJT-X "UDP Server" is detected automatically by Otto.
 <br><br>For best results inter-operating with other WSJT-X helper programs, set the WSJT-X "UDP Server" (Settings | Reporting tab) to address 239.255.0.0 and port 2237, with all "Outgoing interfaces" selected.
 <br><br>If you experience any problems with Otto, close all other programs that interface with WSJT-X, then re-open each one at a time to determine which one causes the problem.
