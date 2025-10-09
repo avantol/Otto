@@ -4,8 +4,9 @@
 <br><br><b><i>Use all appropriate caution since transmit can start at any time once you select "Enable Tx" in WSJT-X!!! Whenever the "Enable Tx" button is red, your antenna can be energized.</i></b>
 <br><br>At first run, basic mode:
 <br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/ctrlv2_Init.JPG">
-<br><br>Later, the advanced mode, which features the "Quick-start Guide":
+<br><br>Later, the advanced mode, which features the "Quick-start Setup":
 <br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/Guide.JPG">
+<br>(Use this Qick-start Setup every time you want to change your operating mode... daily, hourly, whenever).
 <br><br>You can also view all the options:
 <br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/ctrlv2.JPG">
 <br><br>As a start, Otto stores up calls that are interesting to you that come in while you're working another call, then replies to each in turn.
