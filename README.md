@@ -29,7 +29,7 @@
 <br>- automatically start and/or stop transmitting at specified time(s)
 <br>- reply to calls that are new for a specific band in addition to new for any band 
 <br>- gain a huge advantage in QSOs with new DXCCs and DXpeditions by instantly and persistently replying 
-<br><br>Click here for the full feature list for all WM8Q projects -> https://github.com/avantol/Otto/releases/download/v3.12/WM8Q.feature.list.pdf
+<br><br>Click here for the full feature list for all WM8Q projects -> https://docs.google.com/spreadsheets/d/e/2PACX-1vRYuHHO7EpAjSYfSCHZycaMdFZfYVkFyqPz9biFtmnS9uukw43fYYqEBZyhV0WtQyde50OqF96b1Ao_/pubhtml?gid=0&single=true
 <br>The feature list also contains download links for all projects.
 <br><br>Tips:
 <br><br>Otto and the modified WSJT-X program run as a "versioned" pair, and Otto checks for the correct WSJT-X version when it starts. Be sure to download and install both programs!
