@@ -195,6 +195,11 @@
             "AssemblyAsmDisplayName" = "8:System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
                 "ScatterAssemblies"
                 {
+                    "_249DB9F765875993424B2E9E22ED244F"
+                    {
+                    "Name" = "8:System.Net.Http.dll"
+                    "Attributes" = "3:512"
+                    }
                 }
             "SourcePath" = "8:System.Net.Http.dll"
             "TargetName" = "8:"
@@ -370,15 +375,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Otto"
-        "ProductCode" = "8:{56D929B3-3B02-44E1-B3ED-1552A8D6FB4C}"
-        "PackageCode" = "8:{C315AC9B-D16B-4B52-A448-BEE02DB66A91}"
+        "ProductCode" = "8:{A8FE1139-5FD1-4B55-A417-E47B93BABEA2}"
+        "PackageCode" = "8:{A2B1B696-1157-49BD-B7CD-45453B626EFD}"
         "UpgradeCode" = "8:{58863A86-1E9E-4ECA-8AF5-C8BEE7AB4238}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:3.12.0"
+        "ProductVersion" = "8:3.14.0"
         "Manufacturer" = "8:WM8Q"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
@@ -920,7 +925,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_13955C8D95C14416A597653571C6CA17"
             {
-            "SourcePath" = "8:..\\WSJTX_Controller\\obj\\Release\\WSJTX_Controller.exe"
+            "SourcePath" = "8:..\\WSJTX_Controller\\obj\\Debug\\WSJTX_Controller.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_F9097703E65145C3AE3E9348ED10AEA6"
