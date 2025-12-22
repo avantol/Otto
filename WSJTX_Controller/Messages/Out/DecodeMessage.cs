@@ -383,14 +383,27 @@ namespace WsjtxUdpLib.Messages.Out
 
             //this actually happens, because of AP (a priori) set
             //'W1AW K1HZ FN42                      ? a2'
+            //'CQ HK4OK FJ26      ? a1'
+            //'WM8Q KA1MXL -24    ? a3'
+            //'KJ5QC KK7O R+19      a35'
+            //'SQ8AA IQ3VV RR73   ? a35'
+            //'KO4FX/KH6 KJ7WLL CN85 ? a35'
             //01234567890123456789012345678901234567890
             //          1         2         3         4
-            int idx = enqueueDecodeMessage.Message.IndexOf("        ");
+            int idx = enqueueDecodeMessage.Message.IndexOf("?");
             if (idx != -1)
             {
-                enqueueDecodeMessage.Message = enqueueDecodeMessage.Message.Substring(0, idx);
+                enqueueDecodeMessage.Message = enqueueDecodeMessage.Message.Substring(0, idx).Trim();
             }
-
+            else
+            {
+                idx = enqueueDecodeMessage.Message.IndexOf("a");
+                if (idx != -1)
+                {
+                    enqueueDecodeMessage.Message = enqueueDecodeMessage.Message.Substring(0, idx).Trim();
+                }
+            }
+             
             //hashed message case, brackets and only two words:
             // <K1JT> KG6EMU/AG
             enqueueDecodeMessage.Message = RemoveAngleBrackets(enqueueDecodeMessage.Message);
