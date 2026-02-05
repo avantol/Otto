@@ -42,7 +42,7 @@ namespace WSJTX_Controller
 
         private string nl = Environment.NewLine;
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "3.0.0-rc1/100", "3.0.0-rc1/101" };
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "2.7.0/205", "3.0.0-rc1/100", "3.0.0-rc1/101", "3.0.0-rc1/102" };
         private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevTo = 2;
