@@ -42,7 +42,7 @@ namespace WSJTX_Controller
 
         private string nl = Environment.NewLine;
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "2.7.0/205", "3.0.0-rc1/100", "3.0.0-rc1/101", "3.0.0-rc1/102" };
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "2.7.0/205", "3.0.0-rc1/100", "3.0.0-rc1/101", "3.0.0-rc1/102", "3.0.0-rc1/103" };
         private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevTo = 2;
@@ -2354,7 +2354,6 @@ namespace WSJTX_Controller
                         {
                             ctrl.ShowMsg($"Waiting to process {deCall}...", false);
                             DisableTx(true);        //also sets WSJT-X "Enable Tx" button state
-                            txTimeout = false;
                         }
                     }
                 }
@@ -3209,7 +3208,7 @@ namespace WSJTX_Controller
                 return null;
             }
 
-            if (WsjtxMessage.Is73(dmsg.Message)) dmsg.Message = dmsg.Message.Replace(" 73", "");            //important, otherwise WSJT-X will not respond
+            //tempOnly if (WsjtxMessage.Is73(dmsg.Message)) dmsg.Message = dmsg.Message.Replace(" 73", "");            //important, otherwise WSJT-X will not respond
             DebugOutput($"{spacer}peek {call}: msg:'{dmsg.Message}'");
             return call;
         }
@@ -6198,7 +6197,8 @@ namespace WSJTX_Controller
             RemoveCall(call);
 
             //leave RR73 unmodified for correct reply to myCall
-            if (WsjtxMessage.Is73(dmsg.Message)) dmsg.Message = dmsg.Message.Replace(" 73", "");            //important, otherwise WSJT-X will not respond
+            //tempOnly
+            //if (WsjtxMessage.Is73(dmsg.Message)) dmsg.Message = dmsg.Message.Replace(" 73", "");            //important, otherwise WSJT-X will not respond
             DebugOutput($"{spacer}call:{call}: msg:'{dmsg.Message}'");
             return call;
         }
@@ -6247,15 +6247,16 @@ namespace WSJTX_Controller
             rmsg.DeltaTime = dmsg.DeltaTime;
             rmsg.DeltaFrequency = dmsg.DeltaFrequency;
             rmsg.Mode = dmsg.Mode;
-            if (toCall == myCall)
-            {
-                //leave any RR73 to myCall unmodified for correct reply
-                rmsg.Message = dmsg.Message;
-            }
-            else    //check for 73 or RR73 to any other call
-            {
-                rmsg.Message = dmsg.Message.Replace(" RR73", "").Replace(" 73", "").Replace("73 ", "").Replace(" 73 ", "");      //remove these because sending 73 as a reply terminates msg sequence (note: "73" might be part of a call sign)
-            }
+            //tempOnly 
+            //if (toCall == myCall)
+            //{
+            //leave any RR73 to myCall unmodified for correct reply
+            rmsg.Message = dmsg.Message;
+            //}
+            //else    //check for 73 or RR73 to any other call
+            //{
+            //    rmsg.Message = dmsg.Message.Replace(" RR73", "").Replace(" 73", "").Replace("73 ", "").Replace(" 73 ", "");      //remove these because sending 73 as a reply terminates msg sequence (note: "73" might be part of a call sign)
+            //}
             rmsg.UseStdReply = dmsg.UseStdReply;
             ba = rmsg.GetBytes();
             udpClient2.Send(ba, ba.Length);

@@ -60,6 +60,10 @@ namespace WSJTX_Controller
         public System.Windows.Forms.Timer helpTimer;
 
         private string nl = Environment.NewLine;
+        private static string alphanumericOnly = "[^0-9A-Za-z]";  //match if any non-alphanumeric
+        private static string alphaOnly = "[^A-Za-z]";         //match if any numeric
+        private static string numericOnly = "[^0-9]";          //match if any alpha
+
 
         public Controller()
         {
@@ -1069,7 +1073,7 @@ namespace WSJTX_Controller
         {
             e.KeyChar = char.ToUpper(e.KeyChar);
             char c = e.KeyChar;
-            if (c == (char)Keys.Back || c == ' ' || (c >= 'A' && c <= 'Z')) return;
+            if (c == (char)Keys.Back || c == ' ' || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) return;
             Console.Beep();
             e.Handled = true;
         }
@@ -1078,7 +1082,7 @@ namespace WSJTX_Controller
         {
             e.KeyChar = char.ToUpper(e.KeyChar);
             char c = e.KeyChar;
-            if (c == (char)Keys.Back || c == ' ' || (c >= 'A' && c <= 'Z')) return;
+            if (c == (char)Keys.Back || c == ' ' || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) return;
             Console.Beep();
             e.Handled = true;
         }

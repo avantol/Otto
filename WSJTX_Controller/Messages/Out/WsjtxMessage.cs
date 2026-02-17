@@ -4,9 +4,46 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace WsjtxUdpLib.Messages.Out
 {
+    /*
+            string s = WsjtxMessage.DirectedTo("CQ K1JT EM51");
+            s = WsjtxMessage.DeCall("CQ K1JT EM51");
+            s = WsjtxMessage.ToCall("CQ K1JT EM51");
+
+            s = WsjtxMessage.DirectedTo("CQ NA AN K1JT EM51");
+            s = WsjtxMessage.DeCall("CQ NA AN K1JT EM51");
+            s = WsjtxMessage.ToCall("CQ NA AN K1JT EM51");
+
+            s = WsjtxMessage.DirectedTo("CQ 250 250 K1JT EM51");
+            s = WsjtxMessage.DeCall("CQ 250 250 K1JT EM51");
+            s = WsjtxMessage.ToCall("CQ 250 250 K1JT EM51");
+
+            s = WsjtxMessage.DirectedTo("CQ N25 K1JT");
+            s = WsjtxMessage.DeCall("CQ N25 K1JT");
+            s = WsjtxMessage.ToCall("CQ N25 K1JT");
+
+            s = WsjtxMessage.DirectedTo("CQ --- K1JT");
+            s = WsjtxMessage.DeCall("CQ --- K1JT");
+            s = WsjtxMessage.ToCall("CQ --- K1JT");
+
+            s = WsjtxMessage.DirectedTo("WM8Q K1JT EM51");
+            s = WsjtxMessage.DeCall("WM8Q K1JT EM51");
+            s = WsjtxMessage.ToCall("WM8Q K1JT EM51");
+
+
+            s = WsjtxMessage.DirectedTo("CQ USA K1JT EM51");
+            s = WsjtxMessage.DeCall("CQ USA K1JT EM51");
+            s = WsjtxMessage.ToCall("CQ USA K1JT EM51");
+
+            s = WsjtxMessage.DirectedTo("CQ 250 K1JT EM51");
+            s = WsjtxMessage.DeCall("CQ 250 K1JT EM51");
+            s = WsjtxMessage.ToCall("CQ 250 K1JT EM51");
+
+    */
+
     public abstract class WsjtxMessage
     {
         protected const int MAGIC_NUMBER_LENGTH = 4;
@@ -40,6 +77,11 @@ namespace WsjtxUdpLib.Messages.Out
         public static int NegotiatedSchemaVersion = 2;
         public static NegoStates NegoState = NegoStates.INITIAL;
 
+        private static string alphanumericOnly = "[^0-9A-Za-z]";  //match if any non-alphanumeric
+        private static string alphaOnly = "[^A-Za-z]";         //match if any numeric
+        private static string numericOnly = "[^0-9]";          //match if any alpha
+
+
         //return the "to" call from the msg in the form "W1AW K1JT FN60"
         //if a CQ return "CQ", if no/invalid/non-std msg, return null
         public static string ToCall(string msg)
@@ -72,12 +114,28 @@ namespace WsjtxUdpLib.Messages.Out
             return words[1];
         }
 
+        //return payload of message
+        //if no payload or non-std or invalid msg, return empty string
+        public static string Payload(string msg)
+        {
+            if (IsInvalid(msg)) return "";
+            if (IsCQ(msg))      //CQ considered a payload
+            {
+                string dirTo = DirectedTo(msg);
+                string d = dirTo != null ? $" {dirTo}" : "";
+                return $"CQ{d}";
+            }
+            string[] words = msg.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (words.Count() <= 2 || words.Count() > 4) return "";
+            return words[words.Count() - 1];
+        }
+
         //detect bad (garbage) decode
-        private static bool IsInvalidCall(string call)
+        public static bool IsInvalidCall(string call)
         {
             if (call.Contains("/")) return false;
             if (call.Length > maxBaseCallsignLength) return true;
-            if (IsAlphaOnly(call)) return true;
+            if (IsAlphaOnly(call) || IsNumericOnly(call)) return true;
 
             //count non-consecutive digits (2-4 consecutive digits can be special event call)
             int n = 0;
@@ -107,10 +165,15 @@ namespace WsjtxUdpLib.Messages.Out
 
         private static bool IsAlphaOnly(string s)
         {
-            return s.IndexOfAny(new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }) == -1;
+            return !Regex.IsMatch(s, alphaOnly);
         }
 
-        private static bool IsInvalid(string msg)
+        private static bool IsNumericOnly(string s)
+        {
+            return !Regex.IsMatch(s, numericOnly);
+        }
+
+        public static bool IsInvalid(string msg)
         {
             return msg == null || msg.Contains("...") || msg.Contains('<') || msg.Contains('>');
         }
@@ -153,15 +216,15 @@ namespace WsjtxUdpLib.Messages.Out
         }
         //msg only in the form "CQ K1JT" or "CQ K1JT EM51" 
         //or "CQ WY K1JT" or "CQ WY K1JT EM51" or "CQ USA K1JT" or "CQ USA K1JT EM51"
-        //or "CQ ASIA K1JT EM51" or "CQ POTA K1JT"
-        //but not "CQ WY SD K1JT EM51" or "CQ WY SD K1JT" (not std msgs)
+        //or "CQ ASIA K1JT EM51" or "CQ POTA K1JT" or "CQ 250 K1JT EM51"
+        //but not "CQ WY SD K1JT EM51" or "CQ WY 250 K1JT" (not std msgs)
         public static bool IsCQ(string msg)
         {
             if (ToCall(msg) != "CQ") return false;
             //known to be 2, 3, or 4 words
             string[] words = msg.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             //not "CQ WY SD K1JT" or "CQ USA EUR K1JT" (not std msg)
-            if (words.Count() == 4 && IsAlphaOnly(words[1]) && IsAlphaOnly(words[2])) return false;
+            if (words.Count() == 4 && (IsAlphaOnly(words[1]) || IsNumericOnly(words[1])) && (IsAlphaOnly(words[2]) || IsAlphaOnly(words[2]))) return false;
 
             /*foreach (string word in words)
             {
@@ -292,11 +355,12 @@ namespace WsjtxUdpLib.Messages.Out
             if (words.Count() < 3 || words.Count() > 4) return null;
             //not K1JT WM8Q DN61
             if (words[0] != "CQ") return null;
-            //not "CQ K1JT EM51"
-            if (words.Count() == 3 && !IsAlphaOnly(words[1]) && IsGridFormat(words[2])) return null;
+            //not "CQ W25 K1JT"
+            if (!IsAlphaOnly(words[1]) && !IsNumericOnly(words[1])) return null;
+            //nor CQ 250 USA
+            if (words.Count() >= 3 && (IsAlphaOnly(words[2]) || IsNumericOnly(words[2]))) return null;
             //not "CQ WY SD K1JT" 
-            if (words.Count() == 4 && IsAlphaOnly(words[1]) && IsAlphaOnly(words[2])) return null;
-            //is "CQ USA K1JT EM51" or "CQ USA K1JT"
+            if (words.Count() == 4 && !IsGridFormat(words[3])) return null;
             return words[1]; 
         }
 
