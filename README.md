@@ -1,6 +1,7 @@
-# Otto
+# Otto (for FT8 and FT2 on WSJT-X)
 <br>Otto is your assistant for WSJT-X (the extremely popular amateur radio weak-signal digital modes program).
 <br>Click here > <b>https://github.com/avantol/Otto/releases/latest</b> for download and installation instructions. 
+<br><br>The information below applies only to Otto for FT8 (FT2 information at <b>https://github.com/avantol/Otto/releases/latest</b>).
 <br><br><b><i>Use all appropriate caution since transmit can start at any time once you select "Enable Tx" in WSJT-X!!! Whenever the "Enable Tx" button is red, your antenna can be energized.</i></b>
 <br><br>At first run, basic mode:
 <br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/ctrlv2_Init.JPG">
