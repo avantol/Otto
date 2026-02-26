@@ -71,7 +71,7 @@ namespace WSJTX_Controller
 
         private void Guide_Load(object sender, EventArgs e)
         {
-            modeLabel.Visible = modeLabel2.Visible = callCqButton.Visible = listenButton.Visible = label13.Visible = label14.Visible = dxccButton.Visible = dxccHelpLabel.Visible = wsjtxClient.showTxModes;
+            modeLabel.Visible = modeLabel2.Visible = callCqButton.Visible = listenButton.Visible = label13.Visible = label14.Visible = dxccButton.Visible = dxccHelpLabel.Visible = true;
             UpdateAllButtons();
             dxccButtonEnabled = wsjtxClient.txMode == WsjtxClient.TxModes.LISTEN && ctrl.periodComboBox.SelectedIndex == (int)WsjtxClient.ListenModeTxPeriods.ANY && ctrl.replyNewDxccCheckBox.Checked && ctrl.replyNewOnlyCheckBox.Checked;
             dxccHelpLabel.Visible = dxccButton.Visible && dxccButtonEnabled;
@@ -316,12 +316,22 @@ namespace WSJTX_Controller
         {
             button.ForeColor = highlightFore;
             button.BackColor = enabled ? highlightBack : highlightBackDisabled;
+            if (button.FlatStyle == FlatStyle.Flat)
+            {
+                button.FlatAppearance.MouseOverBackColor = button.BackColor;
+                button.FlatAppearance.MouseDownBackColor = button.BackColor;
+            }
         }
 
         private void Normal(Button button, bool enabled)
         {
-            button.ForeColor = normalFore;
-            button.BackColor = normalBack;
+            button.ForeColor = DarkMode.Enabled ? DarkMode.DarkButtonForeground : normalFore;
+            button.BackColor = DarkMode.Enabled ? DarkMode.DarkButtonBackground : normalBack;
+            if (button.FlatStyle == FlatStyle.Flat)
+            {
+                button.FlatAppearance.MouseOverBackColor = button.BackColor;
+                button.FlatAppearance.MouseDownBackColor = button.BackColor;
+            }
         }
 
         private void Guide_KeyDown(object sender, KeyEventArgs e)
@@ -329,6 +339,10 @@ namespace WSJTX_Controller
             if (e.Control && e.KeyCode == Keys.Q)
             {
                 Close();
+            }
+            if (e.Control && e.KeyCode == Keys.K)
+            {
+                ctrl.ToggleDarkMode();
             }
         }
     }

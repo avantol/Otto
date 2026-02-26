@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "deny":[
+      "Read(../**)"
+      "Read(/.../.*)"
+    ],
+    "allow": [
+      "Bash",
+      "Read", 
+      "Edit",
+      "Write",
+      "Grep",
+      "Glob"
+    ]
+  },
+  "defaultMode": "acceptEdits"
+}

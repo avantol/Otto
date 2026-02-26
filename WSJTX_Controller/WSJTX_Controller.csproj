@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{DA3AFA58-C818-48B7-83EC-9FF1FC17E4DD}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>WSJTX_Controller</RootNamespace>
     <AssemblyName>WSJTX_Controller</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
@@ -48,7 +48,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject />
+    <StartupObject>
+    </StartupObject>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>netfol.ico</ApplicationIcon>
@@ -124,6 +125,7 @@
     <Compile Include="SetupDlg.Designer.cs">
       <DependentUpon>SetupDlg.cs</DependentUpon>
     </Compile>
+    <Compile Include="DarkMode.cs" />
     <Compile Include="WsjtxClient.cs" />
     <EmbeddedResource Include="ConfirmDlg.resx">
       <DependentUpon>ConfirmDlg.cs</DependentUpon>
@@ -165,34 +167,34 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Blip.wav">
+    <Content Include="Resources\Blip.wav">
+      <Link>Blip.wav</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Dive.wav">
+    </Content>
+    <Content Include="Resources\Dive.wav">
+      <Link>Dive.wav</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Echo.wav">
+    </Content>
+    <Content Include="Resources\Echo.wav">
+      <Link>Echo.wav</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Trumpet.wav">
+    </Content>
+    <Content Include="Resources\Trumpet.wav">
+      <Link>Trumpet.wav</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\BeepBeep.wav">
+    </Content>
+    <Content Include="Resources\BeepBeep.wav">
+      <Link>BeepBeep.wav</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    </Content>
+    <Content Include="Resources\DingDing.wav">
+      <Link>DingDing.wav</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="netfol.ico" />
     <Content Include="Properties\netfol.ico" />
-    <Content Include="Resources\DingDing.wav" />
     <Content Include="Resources\netfol.ico" />
   </ItemGroup>
   <ItemGroup>

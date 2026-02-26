@@ -16,17 +16,19 @@ using System.Media;
 using System.IO;
 using System.Reflection;
 using Microsoft.Win32;
-
+using System.Diagnostics;
 
 namespace WSJTX_Controller
 {
     public partial class Controller : Form
     {
+        private const int WM_SETREDRAW = 0x000B;
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
         public WsjtxClient wsjtxClient;
         public Guide guide;
         public bool alwaysOnTop = false;
-        public bool firstRun = true;        //first run for each user level
-        public bool skipLevelPrompt = false;
         public bool offsetTune = false;
 
         private bool formLoaded = false;
@@ -41,15 +43,23 @@ namespace WSJTX_Controller
         private MouseEventArgs mouseEventArgs;
         private int listBoxClickCount;
         private bool ignoreDirectedChange = false;
-        private bool showOptions = false;
-        private Control[] movableCtrls;
-        private int[] movableCtrlYs;
-        private List<Control> hideCtrls;
-        private int optionsOffset;
+        internal bool callingExpanded = true;
+        internal bool replyingExpanded = true;
+        internal bool sequenceExpanded = true;
+        internal bool generalExpanded = true;
+        private Control[][] sectionControls;
+        private int[][] sectionCtrlYs;
+        private Label[] sectionHeaders;
+        private int[] sectionHeaderOrigYs;
+        private int[] sectionHeights;
+        private Control[] bottomCtrls;
+        private int[] bottomCtrlOrigYs;
+        private const int sectionHeaderHeight = 18;
         private string helpSuffix = " Help";
         private bool ignoreExceptChange = false;
+        public bool darkMode = false;
 
-    private System.Windows.Forms.Timer mainLoopTimer;
+        private System.Windows.Forms.Timer mainLoopTimer;
 
         public System.Windows.Forms.Timer statusMsgTimer;
         public System.Windows.Forms.Timer initialConnFaultTimer;
@@ -60,16 +70,24 @@ namespace WSJTX_Controller
         public System.Windows.Forms.Timer helpTimer;
 
         private string nl = Environment.NewLine;
-        private static string alphanumericOnly = "[^0-9A-Za-z]";  //match if any non-alphanumeric
-        private static string alphaOnly = "[^A-Za-z]";         //match if any numeric
-        private static string numericOnly = "[^0-9]";          //match if any alpha
-
+        //private static string alphanumericOnly = "[^0-9A-Za-z]";  //match if any non-alphanumeric
+        //private static string alphaOnly = "[^A-Za-z]";         //match if any numeric
+        //private static string numericOnly = "[^0-9]";          //match if any alpha
+        private string fileVer;
+        private const string basicOnlyFileVer = "1.2";
 
         public Controller()
         {
             InitializeComponent();
             friendlyName = Text;
             KeyPreview = true;
+
+            string allVer = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion;
+            Version v;
+            Version.TryParse(allVer, out v);
+            fileVer = $"{v.Major}.{v.Minor}";
+
+            showCloseMsgs = !IsBasicOnly();
 
             //timers
             mainLoopTimer = new System.Windows.Forms.Timer();
@@ -94,37 +112,76 @@ namespace WSJTX_Controller
             helpTimer.Interval = 20;
             helpTimer.Tick += new System.EventHandler(helpTimer_Tick);
 
-            optionsOffset = modeGroupBox.Location.Y - (callListBox.Location.Y + callListBox.Size.Height) - 10;
-            movableCtrls = new Control[9] 
-                {optionsButton,
-                setupButton,
-                modeGroupBox,
-                guideLabel,
-                msgTextBox,
-                statusText,
-                verLabel,
-                verLabel2,
-                modeHelpLabel};
-
-            movableCtrlYs = new int[9];
-            for (int i = 0; i < movableCtrlYs.Length; i++)
+            // Section headers
+            sectionHeaders = new Label[] { callingLabel, replyingLabel, sequenceLabel, optionsLabel };
+            sectionHeaderOrigYs = new int[4];
+            for (int i = 0; i < 4; i++)
             {
-                movableCtrlYs[i] = movableCtrls[i].Location.Y;
+                sectionHeaderOrigYs[i] = sectionHeaders[i].Location.Y;
+                sectionHeaders[i].Cursor = Cursors.Hand;
+            }
+            callingLabel.Text = "\u25b2 Calling options";
+            replyingLabel.Text = "\u25b2 Replying options";
+            sequenceLabel.Text = "\u25b2 Sequence options";
+            optionsLabel.Text = "\u25b2 General options";
+
+            // Section controls (excluding headers)
+            sectionControls = new Control[4][];
+            sectionControls[0] = new Control[] {
+                callCqDxCheckBox, IgnoreNonDxHelpLabel, ignoreNonDxCheckBox,
+                callDirCqCheckBox, UseDirectedHelpLabel, directedTextBox,
+                callNonDirCqCheckBox
+            };
+            sectionControls[1] = new Control[] {
+                replyDirCqCheckBox, AlertDirectedHelpLabel, alertTextBox,
+                replyNormCqLabel, ExcludeHelpLabel, bandComboBox, forLabel, replyDxCheckBox, replyLocalCheckBox,
+                cqOnlyRadioButton, cqGridRadioButton, anyMsgRadioButton, includeLabel, IncludeHelpLabel,
+                rankComboBox, PriorityHelpLabel, callLabel,
+                replyNewDxccCheckBox, replyNewOnlyCheckBox, ReplyNewHelpLabel,
+                exceptLabel, exceptTextBox, blockHelpLabel
+            };
+            sectionControls[2] = new Control[] {
+                skipGridCheckBox, useRR73CheckBox,
+                logEarlyCheckBox, LogEarlyHelpLabel, replyRR73CheckBox, ReplyRR73HelpLabel,
+                limitLabel, timeoutNumUpDown, repeatLabel, optimizeCheckBox, holdCheckBox, LimitTxHelpLabel
+            };
+            sectionControls[3] = new Control[] {
+                freqCheckBox, AutoFreqHelpLabel,
+                periodLabel, periodComboBox, PeriodHelpLabel,
+                timedCheckBox, timeoutLabel, startLabel, startTextBox, atLabel, timeLabel2, modeComboBox, StartHelpLabel,
+                stopLabel, stopTextBox, timeLabel,
+                playSoundLabel, callAddedCheckBox, mycallCheckBox, loggedCheckBox
+            };
+
+            // Record original Y positions for each section's controls
+            sectionCtrlYs = new int[4][];
+            sectionHeights = new int[4];
+            for (int s = 0; s < 4; s++)
+            {
+                sectionCtrlYs[s] = new int[sectionControls[s].Length];
+                int maxBottom = sectionHeaderOrigYs[s] + sectionHeaderHeight;
+                for (int c = 0; c < sectionControls[s].Length; c++)
+                {
+                    sectionCtrlYs[s][c] = sectionControls[s][c].Location.Y;
+                    int bottom = sectionControls[s][c].Location.Y + sectionControls[s][c].Height;
+                    if (bottom > maxBottom) maxBottom = bottom;
+                }
+                sectionHeights[s] = maxBottom - sectionHeaderOrigYs[s];
             }
 
-
-            hideCtrls = new List<Control>();
-            Rectangle rect = new Rectangle(
-                0,
-                callListBox.Location.Y + callListBox.Height + 10,
-                Width,
-                optionsButton.Location.Y + optionsButton.Height - modeGroupBox.Location.Y + 8);
-
-            foreach (Control control in Controls) { 
-                if (control.Bounds.IntersectsWith(rect))
-                {
-                    hideCtrls.Add(control);
-                }
+            // Bottom controls (always visible, repositioned dynamically)
+            bottomCtrls = new Control[] {
+                setupButton, modeGroupBox, guideLabel, msgTextBox,
+                statusText, verLabel, verLabel2, modeHelpLabel,
+                label1, label2, label3, label4, label5, label6, label7, label8, label9, label10,
+                label11, label12, label13, label14, label15, label16, label17, label18, label19, label20,
+                label21, label22, label23, label24, label25, label26, label27, label28, label29, label30,
+                label31, label32, label33, label34
+            };
+            bottomCtrlOrigYs = new int[bottomCtrls.Length];
+            for (int i = 0; i < bottomCtrls.Length; i++)
+            {
+                bottomCtrlOrigYs[i] = bottomCtrls[i].Location.Y;
             }
         }
 
@@ -157,11 +214,9 @@ namespace WSJTX_Controller
             int port = 0;
             bool multicast = true;
             bool overrideUdpDetect = false;
-            bool advanced = false;
             bool debug = false;
             bool diagLog = false;
             WsjtxClient.TxModes txMode = WsjtxClient.TxModes.CALL_CQ;
-            bool showTxModes = false;
             int offsetHiLimit = -1;
             int offsetLoLimit = -1;
             bool useRR73 = false;
@@ -171,13 +226,12 @@ namespace WSJTX_Controller
             //control defaults
             modeComboBox.SelectedIndex = 0;
             periodComboBox.SelectedIndex = 2;
-            int rankMethodIdx = (int)WsjtxClient.RankMethods.CALL_ORDER;
+            int rankMethodIdx = (int)WsjtxClient.RankMethods.MOST_RECENT;
             freqCheckBox.Checked = false;
             timedCheckBox.Checked = false;           //not saved
 
-            if (iniFile == null || !iniFile.KeyExists("advanced"))     //.ini file not written yet, read properties (possibly set defaults)
+            if (iniFile == null)     //.ini file not written yet, read properties (possibly set defaults)
             {
-                firstRun = Properties.Settings.Default.firstRun;
                 debug = Properties.Settings.Default.debug;
                 if (Properties.Settings.Default.windowPos != new Point(0, 0)) 
                     this.Location = Properties.Settings.Default.windowPos;
@@ -194,15 +248,16 @@ namespace WSJTX_Controller
                 alertTextBox.Text = Properties.Settings.Default.alertDirecteds;
                 replyDirCqCheckBox.Checked = Properties.Settings.Default.useAlertDirected;
                 logEarlyCheckBox.Checked = Properties.Settings.Default.logEarly;
-                advanced = Properties.Settings.Default.advanced;
                 alwaysOnTop = Properties.Settings.Default.alwaysOnTop;
                 useRR73 = Properties.Settings.Default.useRR73;
                 skipGridCheckBox.Checked = Properties.Settings.Default.skipGrid;
                 diagLog = Properties.Settings.Default.diagLog;
+                freqCheckBox.Checked = Properties.Settings.Default.bestOffset;
+                rankMethodIdx = Properties.Settings.Default.rankMethodIdx;
+                callAddedCheckBox.Checked = Properties.Settings.Default.playCallAdded;
             }
             else        //read settings from .ini file (avoid .Net config file mess)
             {
-                firstRun = iniFile.Read("firstRun") == "True";
                 debug = iniFile.Read("debug") == "True";
 
                 int x;
@@ -256,7 +311,6 @@ namespace WSJTX_Controller
                 alertTextBox.Text = iniFile.Read("alertDirecteds");
                 replyDirCqCheckBox.Checked = iniFile.Read("useAlertDirected") == "True";
                 logEarlyCheckBox.Checked = iniFile.Read("logEarly") == "True";
-                advanced = iniFile.Read("advanced") == "True";
                 alwaysOnTop = iniFile.Read("alwaysOnTop") == "True";
                 useRR73 = iniFile.Read("useRR73") == "True";
                 skipGridCheckBox.Checked = iniFile.Read("skipGrid") == "True";
@@ -266,7 +320,6 @@ namespace WSJTX_Controller
 
                 //start of .ini-file-only settings (not in .Net config)
                 mode = iniFile.Read("replyAndQuit") == "True";
-                showTxModes = iniFile.Read("showTxModes") == "True";
                 freqCheckBox.Checked = iniFile.Read("bestOffset") == "True";
                 if (iniFile.KeyExists("stopTxTime")) stopTextBox.Text = iniFile.Read("stopTxTime");
                 if (iniFile.KeyExists("startTxTime")) startTextBox.Text = iniFile.Read("startTxTime");
@@ -285,7 +338,6 @@ namespace WSJTX_Controller
                 ignoreNonDxCheckBox.Checked = iniFile.Read("ignoreNonDx") == "True";
                 callNonDirCqCheckBox.Checked = iniFile.Read("callNonDirCq") == "True";
                 overrideUdpDetect = iniFile.Read("overrideUdpDetect") == "True";
-                skipLevelPrompt = iniFile.Read("skipLevelPrompt") == "True";
                 cqOnlyRadioButton.Checked = iniFile.Read("cqOnly") != "False";              //default: true
                 bool newOnBand = iniFile.Read("newOnBand") != "False";      //default: true
                 bandComboBox.SelectedIndex = newOnBand ? 1 : 0;
@@ -302,31 +354,18 @@ namespace WSJTX_Controller
                 replyRR73CheckBox.Checked = iniFile.Read("replyRR73") == "True";
                 //read-only
                 offsetTune = iniFile.Read("offsetTune") == "True";
-                showOptions = iniFile.Read("showOptions") == "True";
+                callingExpanded = iniFile.Read("callingExpanded") == "True";
+                replyingExpanded = iniFile.Read("replyingExpanded") == "True";
+                sequenceExpanded = iniFile.Read("sequenceExpanded") == "True";
+                generalExpanded = iniFile.Read("generalExpanded") == "True";
+                darkMode = iniFile.Read("darkMode") == "True";
             }
 
             txMode = mode ? WsjtxClient.TxModes.LISTEN : WsjtxClient.TxModes.CALL_CQ;
 
-            if (!advanced)
-            {
-                showTxModes = false;
-                freqCheckBox.Checked = false;
-                optimizeCheckBox.Checked = false;
-                holdCheckBox.Checked = false;
-                minSkipCount = 2;
-            }
-
-            if (showTxModes)
-            {
-                atLabel.Visible = true;
-                modeComboBox.Visible = true;
-                startLabel.Text = "Start";
-            }
-            else
-            {
-                txMode = WsjtxClient.TxModes.CALL_CQ;
-                startLabel.Text = "Start calling CQ at:";
-            }
+            atLabel.Visible = true;
+            modeComboBox.Visible = true;
+            startLabel.Text = "Start";
 
             if (directedTextBox.Text == "") callDirCqCheckBox.Checked = false;
             directedTextBox.Enabled = callDirCqCheckBox.Checked;
@@ -345,11 +384,12 @@ namespace WSJTX_Controller
             if (exceptTextBox.Text == "")
             {
                 exceptTextBox.Text = separateBySpaces;
-                exceptTextBox.ForeColor = Color.Gray;
+                exceptTextBox.ForeColor = DarkMode.GrayText;
             }
 
             UpdateTxLabel();
 
+            timeoutNumUpDown_ValueChanged(null, null);
             callCqDxCheckBox_CheckedChanged(null, null);
             callNonDirCqCheckBox_CheckedChanged(null, null);
             directedTextBox_Leave(null, null);
@@ -367,9 +407,7 @@ namespace WSJTX_Controller
 
             //start the UDP message server
             wsjtxClient = new WsjtxClient(this, IPAddress.Parse(ipAddrStr), port, multicast, overrideUdpDetect, debug, diagLog);
-            wsjtxClient.advanced = advanced;
             wsjtxClient.txMode = txMode;
-            wsjtxClient.showTxModes = showTxModes;
             wsjtxClient.myContinent = myContinent;
             if (myContinent != null) replyLocalCheckBox.Text = myContinent;
             if (offsetLoLimit > 0) wsjtxClient.offsetLoLimit = offsetLoLimit;
@@ -381,10 +419,8 @@ namespace WSJTX_Controller
             mainLoopTimer.Interval = 10;           //actual is 11-12 msec (due to OS limitations)
             mainLoopTimer.Start();
 
-            if (wsjtxClient.advanced)
-            {
-                UpdateAdvancedCtrls();
-            }
+            UpdateAdvancedCtrls();
+            RecalculateLayout();
             TopMost = alwaysOnTop;
 
             UpdateDebug();
@@ -393,44 +429,16 @@ namespace WSJTX_Controller
 
             formLoaded = true;
             updateReplyNewOnlyCheckBoxEnabled();
+
+            if (darkMode)
+            {
+                DarkMode.Enabled = true;
+                DarkMode.ApplyToForm(this);
+            }
         }
 
         private void Controller_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (showCloseMsgs)                 //not closing for immediate restart
-            {
-                firstRun = false;
-
-                if (!skipLevelPrompt)
-                {
-                    if (!wsjtxClient.advanced && wsjtxClient.ConnectedToWsjtx())
-                    {
-                        if (MessageBox.Show($"If you're familiar with the basic operation of this program now, you'll probably be interested in more options." +
-                            $"{nl}{nl}Do you want to see all options the next time you run this program?" +
-                            $"{nl}{nl}(You can make this choice later)", wsjtxClient.pgmName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                        {
-                            wsjtxClient.advanced = true;
-                            firstRun = true;
-                        }
-                    }
-                    else
-                    {
-                        if (!wsjtxClient.showTxModes && wsjtxClient.ConnectedToWsjtx())
-                        {
-                            if (MessageBox.Show($"If you're familiar with using some of the options in this program now, you'll probably be interested in the 'Listen for calls' option." +
-                                $"{nl}{nl}This causes much less traffic on the band than CQing, by waiting to reply until the calls you want are detected." +
-                                $"{nl}{nl}Do you want to see this useful option the next time you run this program?" +
-                                $"{nl}{nl}(You can make this choice later)", wsjtxClient.pgmName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                            {
-                                wsjtxClient.showTxModes = true;
-                                firstRun = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-
             if (iniFile != null)
             {
                 iniFile.Write("debug", wsjtxClient.debug.ToString());
@@ -451,18 +459,15 @@ namespace WSJTX_Controller
                 if (alertTextBox.Text == separateBySpaces) alertTextBox.Clear();
                 iniFile.Write("alertDirecteds", alertTextBox.Text.Trim());
                 iniFile.Write("logEarly", logEarlyCheckBox.Checked.ToString());
-                iniFile.Write("advanced", wsjtxClient.advanced.ToString());
                 iniFile.Write("alwaysOnTop", alwaysOnTop.ToString());
                 iniFile.Write("useRR73", wsjtxClient.useRR73.ToString());
                 iniFile.Write("skipGrid", skipGridCheckBox.Checked.ToString());
-                iniFile.Write("firstRun", firstRun.ToString());
                 iniFile.Write("autoReplyNewCq", replyNewDxccCheckBox.Checked.ToString());
                 iniFile.Write("enableReplyDx", replyDxCheckBox.Checked.ToString());
                 iniFile.Write("enableReplyLocal", replyLocalCheckBox.Checked.ToString());
                 iniFile.Write("diagLog", wsjtxClient.diagLog.ToString());
                 bool mode = wsjtxClient.txMode == WsjtxClient.TxModes.LISTEN;
                 iniFile.Write("replyAndQuit", mode.ToString());
-                iniFile.Write("showTxModes", wsjtxClient.showTxModes.ToString());
                 iniFile.Write("bestOffset", freqCheckBox.Checked.ToString());
                 iniFile.Write("stopTxTime", stopTextBox.Text.Trim());
                 iniFile.Write("startTxTime", startTextBox.Text.Trim());
@@ -475,7 +480,6 @@ namespace WSJTX_Controller
                 iniFile.Write("ignoreNonDx", ignoreNonDxCheckBox.Checked.ToString());
                 iniFile.Write("callNonDirCq", callNonDirCqCheckBox.Checked.ToString());
                 iniFile.Write("overrideUdpDetect", wsjtxClient.overrideUdpDetect.ToString());
-                iniFile.Write("skipLevelPrompt", skipLevelPrompt.ToString());
                 iniFile.Write("cqOnly", cqOnlyRadioButton.Checked.ToString());
                 iniFile.Write("newOnBand", (bandComboBox.SelectedIndex == 1).ToString());
                 iniFile.Write("myContinent", wsjtxClient.myContinent);
@@ -484,7 +488,11 @@ namespace WSJTX_Controller
                 iniFile.Write("cqGrid", cqGridRadioButton.Checked.ToString());
                 iniFile.Write("anyMsg", anyMsgRadioButton.Checked.ToString());
                 iniFile.Write("txPeriodIdx", periodComboBox.SelectedIndex.ToString());
-                iniFile.Write("showOptions", showOptions.ToString());
+                iniFile.Write("callingExpanded", callingExpanded.ToString());
+                iniFile.Write("replyingExpanded", replyingExpanded.ToString());
+                iniFile.Write("sequenceExpanded", sequenceExpanded.ToString());
+                iniFile.Write("generalExpanded", generalExpanded.ToString());
+                iniFile.Write("darkMode", darkMode.ToString());
             }
 
             CloseComm();
@@ -521,14 +529,7 @@ namespace WSJTX_Controller
         private void statusMsgTimer_Tick(object sender, EventArgs e)
         {
             statusMsgTimer.Stop();
-            if (wsjtxClient.showTxModes)
-            {
-                wsjtxClient.UpdateCallInProg();
-            }
-            else
-            {
-                msgTextBox.Text = "";
-            }
+            wsjtxClient.UpdateCallInProg();
 
         }
 
@@ -541,34 +542,33 @@ namespace WSJTX_Controller
         private void debugHighlightTimer_Tick(object sender, EventArgs e)
         {
             debugHighlightTimer.Stop();
-            label17.ForeColor = Color.Black;
-            label24.ForeColor = Color.Black;
-            label25.ForeColor = Color.Black;
-            label13.ForeColor = Color.Black;
-            label10.ForeColor = Color.Black;
-            label20.ForeColor = Color.Black;
-            label21.ForeColor = Color.Black;
-            label8.ForeColor = Color.Black;
-            label19.ForeColor = Color.Black;
-            label18.ForeColor = Color.Black;
-            label12.ForeColor = Color.Black;
-            label4.ForeColor = Color.Black;
-            label14.ForeColor = Color.Black;
-            label15.ForeColor = Color.Black;
-            label16.ForeColor = Color.Black;
-            label26.ForeColor = Color.Black;
-            label27.ForeColor = Color.Black;
-            label3.ForeColor = Color.Black;
-            label1.ForeColor = Color.Black;
-            label2.ForeColor = Color.Black;
-            label28.ForeColor = Color.Black;
-            label11.ForeColor = Color.Black;
+            Color normalColor = DarkMode.NormalLabelFore;
+            label17.ForeColor = normalColor;
+            label24.ForeColor = normalColor;
+            label25.ForeColor = normalColor;
+            label13.ForeColor = normalColor;
+            label10.ForeColor = normalColor;
+            label20.ForeColor = normalColor;
+            label21.ForeColor = normalColor;
+            label8.ForeColor = normalColor;
+            label19.ForeColor = normalColor;
+            label18.ForeColor = normalColor;
+            label12.ForeColor = normalColor;
+            label4.ForeColor = normalColor;
+            label14.ForeColor = normalColor;
+            label15.ForeColor = normalColor;
+            label16.ForeColor = normalColor;
+            label26.ForeColor = normalColor;
+            label27.ForeColor = normalColor;
+            label3.ForeColor = normalColor;
+            label1.ForeColor = normalColor;
+            label2.ForeColor = normalColor;
+            label28.ForeColor = normalColor;
+            label11.ForeColor = normalColor;
         }
 
         private void timeoutNumUpDown_ValueChanged(object sender, EventArgs e)
         {
-            if (!formLoaded) return;
-
             if (timeoutNumUpDown.Value < minSkipCount)
             {
                 timeoutNumUpDown.Value = minSkipCount;
@@ -580,7 +580,7 @@ namespace WSJTX_Controller
             }
             UpdateTxLabel();
 
-            wsjtxClient.TxRepeatChanged();
+            if (formLoaded) wsjtxClient.TxRepeatChanged();
             if (guide != null) guide.UpdateView();
         }
 
@@ -610,7 +610,7 @@ namespace WSJTX_Controller
             if (replyDirCqCheckBox.Checked && alertTextBox.Text == separateBySpaces)
             {
                 alertTextBox.Clear();
-                alertTextBox.ForeColor = System.Drawing.Color.Black;
+                alertTextBox.ForeColor = DarkMode.Foreground;
             }
             if (!replyDirCqCheckBox.Checked && alertTextBox.Text == "") alertTextBox.Text = separateBySpaces;
 
@@ -644,7 +644,6 @@ namespace WSJTX_Controller
         {
             if (!formLoaded) return;
 
-            if (!wsjtxClient.advanced || !showOptions) return;
             wsjtxClient.debug = !wsjtxClient.debug;
             UpdateDebug();
             if (formLoaded) wsjtxClient.DebugChanged();
@@ -665,45 +664,13 @@ namespace WSJTX_Controller
                 AllocConsole();
                 ShowWindow(GetConsoleWindow(), 5);
 #endif
-                Height = this.MaximumSize.Height;
+                RecalculateLayout();
                 wsjtxClient.UpdateDebug();
                 BringToFront();
             }
             else
             {
-                if (wsjtxClient.advanced)
-                {
-                    if (!showOptions)
-                    {
-                        UpdateShowOptions();       //otherwise don't move controls
-                    }
-                    else
-                    {
-                        Height = setupButton.Location.Y + setupButton.Height + 45;
-                    }
-                }
-                else
-                {
-                    statusText.Location = new Point(statusText.Location.X, 279);
-                    setupButton.Location = new Point(setupButton.Location.X, 308);
-                    verLabel.Location = new Point(verLabel.Location.X, 309);
-                    verLabel2.Location = new Point(verLabel2.Location.X, 323);
-                    msgTextBox.Location = new Point(msgTextBox.Location.X, 260);
-                    inProgTextBox.Location = new Point(inProgTextBox.Location.X, 225);
-                    inProgLabel.Location = new Point(inProgLabel.Location.X, 207);
-
-                    limitLabel.Location = new Point(limitLabel.Location.X, 158);
-                    timeoutNumUpDown.Location = new Point(timeoutNumUpDown.Location.X, 155);
-                    repeatLabel.Location = new Point(repeatLabel.Location.X, 158);
-                    LimitTxHelpLabel.Location = new Point(LimitTxHelpLabel.Location.X, 157);
-                    playSoundLabel.Location = new Point(playSoundLabel.Location.X, 182);
-                    callAddedCheckBox.Location = new Point(callAddedCheckBox.Location.X, 182);
-                    mycallCheckBox.Location = new Point(mycallCheckBox.Location.X, 182);
-                    loggedCheckBox.Location = new Point(loggedCheckBox.Location.X, 182);
-
-                    //Height = (int)(this.MaximumSize.Height * 0.46);
-                    Height = setupButton.Location.Y + setupButton.Height + 45;
-                }
+                RecalculateLayout();
 #if DEBUG
                 ShowWindow(GetConsoleWindow(), 0);
 #endif
@@ -752,6 +719,7 @@ namespace WSJTX_Controller
             exceptLabel.Visible = true;
             callingLabel.Visible = true;
             replyingLabel.Visible = true;
+            sequenceLabel.Visible = true;
             optionsLabel.Visible = true;
             cqOnlyRadioButton.Visible = true;
             IgnoreNonDxHelpLabel.Visible = true;
@@ -768,7 +736,6 @@ namespace WSJTX_Controller
             guideLabel.Visible = true;
             blockHelpLabel.Visible = true;
 
-            wsjtxClient.advanced = true;
             wsjtxClient.UpdateModeVisible();
         }
 
@@ -777,7 +744,7 @@ namespace WSJTX_Controller
             if (!formLoaded) return;
 
             skipGridCheckBox.Text = "Skip grid (pending)";
-            skipGridCheckBox.ForeColor = Color.DarkGreen;
+            skipGridCheckBox.ForeColor = DarkMode.PendingColor;
             wsjtxClient.WsjtxSettingChanged();
         }
 
@@ -786,21 +753,22 @@ namespace WSJTX_Controller
             if (!formLoaded) return;
 
             useRR73CheckBox.Text = "Use RR73 (pending)";
-            useRR73CheckBox.ForeColor = Color.DarkGreen;
+            useRR73CheckBox.ForeColor = DarkMode.PendingColor;
             wsjtxClient.WsjtxSettingChanged();
         }
 
         public void WsjtxSettingConfirmed()
         {
             skipGridCheckBox.Text = "Skip grid msg";
-            skipGridCheckBox.ForeColor = Color.Black;
+            skipGridCheckBox.ForeColor = DarkMode.ConfirmedCheckboxColor;
             useRR73CheckBox.Text = "Use RR73 msg";
-            useRR73CheckBox.ForeColor = Color.Black;
+            useRR73CheckBox.ForeColor = DarkMode.ConfirmedCheckboxColor;
         }
 
         public void setupButton_Click(object sender, EventArgs e)
         {
             initialConnFaultTimer.Stop();
+            if (formLoaded) wsjtxClient.RestartAutoCqTimer();
 
             if (setupDlg != null)
             {
@@ -819,6 +787,7 @@ namespace WSJTX_Controller
             setupDlg.wsjtxClient = wsjtxClient;
             setupDlg.ctrl = this;
             if ((bool)setupTimer.Tag) setupDlg.ShowUdpOnly();
+            if (DarkMode.Enabled) DarkMode.ApplyToForm(setupDlg);
             setupDlg.Show();
         }
 
@@ -834,6 +803,7 @@ namespace WSJTX_Controller
         public void guideLabel_Click(object sender, EventArgs e)
         {
             initialConnFaultTimer.Stop();
+            if (formLoaded) wsjtxClient.RestartAutoCqTimer();
 
             if (guide != null)
             {
@@ -850,8 +820,8 @@ namespace WSJTX_Controller
             guideTimer.Stop();
             guide = new Guide(wsjtxClient, this);
             //if ((bool)guideTimer.Tag) ;
+            if (DarkMode.Enabled) DarkMode.ApplyToForm(guide);
             guide.Show();
-            if (wsjtxClient.advanced && !wsjtxClient.showTxModes) firstRun = false;     //prevent showing guide automatically later
         }
 
         public void GuideClosed()
@@ -867,6 +837,10 @@ namespace WSJTX_Controller
 
         private void addCallLabel_Click(object sender, EventArgs e)
         {
+            if (!formLoaded) return;
+
+            wsjtxClient.RestartAutoCqTimer();
+
             ShowHelp($"Calls are replied to in order of importance:" +
                 $"{nl}- New countries on any band*" +
                 $"{nl}- New countries on current band*" +
@@ -996,6 +970,7 @@ namespace WSJTX_Controller
                 $"{nl}    Ctrl+L:  Listen for calls" +
                 $"{nl}    Ctrl+D:  Delete 'Calls waiting reply' list" +
                 $"{nl}    Ctrl+N:  Skip to next call (cancel if none)" +
+                $"{nl}    Ctrl+K:  Toggle dark mode" +
                 $"{nl}    Alt+C:  Configuration");
         }
 
@@ -1028,8 +1003,8 @@ namespace WSJTX_Controller
         {
             if (!formLoaded) return;
 
-            string adv = wsjtxClient != null && wsjtxClient.advanced ? $"{nl}{nl}If 'Optimize' is selected, the maximum number of replies and CQs for the current call is automatically adjusted lower than the specified limit (if possible), to help process the call queue faster." +
-                $"{nl}{nl}If 'Hold' is selected, the 'Repeated Tx' limit is ignored, and replies to the current call sign are transmitted a maximum of {wsjtxClient.holdMaxTxRepeat} times. 'Hold' is automatically enabled when processing a 'new DXCC', deselect 'Reply to new DXCC' to prevent this action." : "";
+            string adv = $"{nl}{nl}If 'Optimize' is selected, the maximum number of replies and CQs for the current call is automatically adjusted lower than the specified limit (if possible), to help process the call queue faster." +
+                $"{nl}{nl}If 'Hold' is selected, the 'Repeated Tx' limit is ignored, and replies to the current call sign are transmitted a maximum of {wsjtxClient.holdMaxTxRepeat} times. 'Hold' is automatically enabled when processing a 'new DXCC', deselect 'Reply to new DXCC' to prevent this action.";
             ShowHelp($"This will limit the number of times the same message is transmitted." +
                 $"{nl}{nl}For example, it will limit the number of repeated transmitted replies or CQs for the current call. If there is no response to your reply messages when the limit is reached, the next call in the queue is processed (or if the call queue is empty, CQing (or listening) will resume)." +
                 $"{nl}{nl}As the repeat limit is reduced, the number of times a call can be automatically re-added to the call queue is increased, to compensate.{adv}");
@@ -1123,8 +1098,7 @@ namespace WSJTX_Controller
         {
             if (!formLoaded) return;
 
-            string s = "";
-            if (wsjtxClient.showTxModes) s = $"{nl}{nl}If you select 'Exclusively', only new countries will be replied to, and all other calls will be ignored. (This option is only available when using the 'Listen for calls' operating mode).";
+            string s = $"{nl}{nl}If you select 'Exclusively', only new countries will be replied to, and all other calls will be ignored. (This option is only available when using the 'Listen for calls' operating mode).";
             ShowHelp($"Select 'Reply to new DXCC' to repeat replies more times than normal, for any message type, from new countries." +
                 $"{nl}{nl}This option is intended ONLY when replying to difficult stations that are likely to have many competing callers, like DXpeditions. It's NOT suitable at all for working the more common DX entities!" +
                 $"{nl}{nl}If a call sign is from a country never worked before on any band, {friendlyName} will sound an audio notification and 'hold' (repeat) transmissions to that call sign for a maximum of {wsjtxClient.holdMaxTxRepeat} times." +
@@ -1259,7 +1233,7 @@ namespace WSJTX_Controller
             {
                 ignoreDirectedChange = true;
                 directedTextBox.Clear();
-                directedTextBox.ForeColor = System.Drawing.Color.Black;
+                directedTextBox.ForeColor = DarkMode.Foreground;
             }
             if (!callDirCqCheckBox.Checked && directedTextBox.Text == "") directedTextBox.Text = separateBySpaces;
 
@@ -1355,9 +1329,9 @@ namespace WSJTX_Controller
 
         public void updateReplyNewOnlyCheckBoxEnabled()
         {
-            if (formLoaded && wsjtxClient.showTxModes)
+            if (formLoaded)
             {
-                replyNewOnlyCheckBox.Visible = true;
+                replyNewOnlyCheckBox.Visible = replyingExpanded;
             }
 
             if (!replyNewDxccCheckBox.Checked)
@@ -1388,7 +1362,7 @@ namespace WSJTX_Controller
 
         private void CheckManualSelection()
         {
-            if (formLoaded && wsjtxClient.showTxModes && listenModeButton.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked && !replyDirCqCheckBox.Checked && !replyNewDxccCheckBox.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked & !replyNewDxccCheckBox.Checked)
+            if (formLoaded && listenModeButton.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked && !replyDirCqCheckBox.Checked && !replyNewDxccCheckBox.Checked && !replyDxCheckBox.Checked && !replyLocalCheckBox.Checked & !replyNewDxccCheckBox.Checked)
             {
                 ShowMsg($"Select calls manually in WSJT-X (alt/dbl-click)", true);
             }
@@ -1411,17 +1385,12 @@ namespace WSJTX_Controller
                 guideLabel_Click(null, null);
             }
 
-            if (e.Control && e.KeyCode == Keys.O)
-            {
-                optionsButton_Click(null, null);
-            }
-
             if (e.Alt && e.KeyCode == Keys.C)
             {
                 setupButton_Click(null, null);
             }
 
-            if (e.Alt && e.KeyCode == Keys.D)           //debug toggle
+            if (e.Shift && e.Alt && e.KeyCode == Keys.D)           //debug toggle
             {
                 verLabel_DoubleClick(null, null);
             }
@@ -1430,6 +1399,7 @@ namespace WSJTX_Controller
 
             if (e.KeyCode == Keys.Escape)               //halt Tx immediately
             {
+                wsjtxClient.RestartAutoCqTimer();
                 if (wsjtxClient.ConnectedToWsjtx())
                 {
                     wsjtxClient.Pause(true);
@@ -1449,13 +1419,31 @@ namespace WSJTX_Controller
 
             if (e.Control && e.KeyCode == Keys.N)       //next call or cancel current
             {
+                wsjtxClient.RestartAutoCqTimer();
                 if (wsjtxClient.ConnectedToWsjtx()) wsjtxClient.NextCall(false, callListBox.SelectedIndex);
             }
 
             if (e.Control && e.KeyCode == Keys.D)       //clear call queue
             {
+                wsjtxClient.RestartAutoCqTimer();
                 if (wsjtxClient.ConnectedToWsjtx()) wsjtxClient.ClearCallQueue();
             }
+
+            if (e.Control && e.KeyCode == Keys.K)       //toggle dark mode
+            {
+                ToggleDarkMode();
+            }
+        }
+
+        public void ToggleDarkMode()
+        {
+            darkMode = !darkMode;
+            DarkMode.Enabled = darkMode;
+            DarkMode.ApplyToForm(this);
+            if (guide != null) DarkMode.ApplyToForm(guide);
+            if (setupDlg != null) DarkMode.ApplyToForm(setupDlg);
+            if (helpDlg != null) DarkMode.ApplyToForm(helpDlg);
+            wsjtxClient.RefreshDisplay();
         }
 
         public void ShowHelp(string s)
@@ -1469,6 +1457,7 @@ namespace WSJTX_Controller
             helpTimer.Stop();
             if (helpDlg != null) helpDlg.Close();
             helpDlg = new HelpDlg(this, $"{wsjtxClient.pgmName}{helpSuffix}", (string)helpTimer.Tag);
+            if (DarkMode.Enabled) DarkMode.ApplyToForm(helpDlg);
             helpDlg.Show();
         }
 
@@ -1657,48 +1646,100 @@ namespace WSJTX_Controller
             if (guide != null) guide.UpdateView();
         }
 
-        private void optionsButton_Click(object sender, EventArgs e)
+        private void callingLabel_Click(object sender, EventArgs e)
         {
             if (!formLoaded) return;
-
-            showOptions = !showOptions;
-            if (showOptions) Hide();
-            SuspendLayout();
-            UpdateShowOptions();
-            ResumeLayout();
-            if (showOptions) Show();
+            callingExpanded = !callingExpanded;
+            ToggleSection();
         }
 
-        private void UpdateShowOptions()
+        private void replyingLabel_Click(object sender, EventArgs e)
         {
-            optionsButton.Text = (showOptions ? "Hide options" : "Show all options");
+            if (!formLoaded) return;
+            replyingExpanded = !replyingExpanded;
+            ToggleSection();
+        }
 
-            int offset = optionsOffset;
-            if (!showOptions) offset = -offset;
+        private void sequenceLabel_Click(object sender, EventArgs e)
+        {
+            if (!formLoaded) return;
+            sequenceExpanded = !sequenceExpanded;
+            ToggleSection();
+        }
 
-            if (showOptions)
+        private void optionsLabel_Click(object sender, EventArgs e)
+        {
+            if (!formLoaded) return;
+            generalExpanded = !generalExpanded;
+            ToggleSection();
+        }
+
+        private void ToggleSection()
+        {
+            SendMessage(Handle, WM_SETREDRAW, IntPtr.Zero, IntPtr.Zero);
+            SuspendLayout();
+            RecalculateLayout();
+            ResumeLayout();
+            SendMessage(Handle, WM_SETREDRAW, (IntPtr)1, IntPtr.Zero);
+            Invalidate(true);
+            Update();
+        }
+
+        private void RecalculateLayout()
+        {
+            bool[] expanded = { callingExpanded, replyingExpanded, sequenceExpanded, generalExpanded };
+            string[] expandedText = { "\u25b2 Calling options", "\u25b2 Replying options", "\u25b2 Sequence options", "\u25b2 General options" };
+            string[] collapsedText = { "\u25bc Calling options", "\u25bc Replying options", "\u25bc Sequence options", "\u25bc General options" };
+
+            int currentY = sectionHeaderOrigYs[0];
+
+            for (int s = 0; s < 4; s++)
             {
-                //restore the movable controls to original location
-                for (int i = 0; i < movableCtrlYs.Length; i++)
+                // Position section header
+                sectionHeaders[s].Location = new Point(sectionHeaders[s].Location.X, currentY);
+                sectionHeaders[s].Text = expanded[s] ? expandedText[s] : collapsedText[s];
+
+                if (expanded[s])
                 {
-                    movableCtrls[i].Location = new Point(movableCtrls[i].Location.X, movableCtrlYs[i]);
+                    // Show controls at their offset from this section's header
+                    for (int c = 0; c < sectionControls[s].Length; c++)
+                    {
+                        int relY = sectionCtrlYs[s][c] - sectionHeaderOrigYs[s];
+                        sectionControls[s][c].Location = new Point(sectionControls[s][c].Location.X, currentY + relY);
+                        sectionControls[s][c].Visible = true;
+                    }
+                    currentY += sectionHeights[s];
                 }
+                else
+                {
+                    // Hide controls
+                    for (int c = 0; c < sectionControls[s].Length; c++)
+                    {
+                        sectionControls[s][c].Visible = false;
+                    }
+                    currentY += sectionHeaderHeight;
+                }
+            }
+
+            // Position bottom controls relative to their original offset from the bottom of the last section
+            int lastSectionOrigBottom = sectionHeaderOrigYs[3] + sectionHeights[3];
+            int delta = currentY - lastSectionOrigBottom;
+
+            for (int i = 0; i < bottomCtrls.Length; i++)
+            {
+                bottomCtrls[i].Location = new Point(bottomCtrls[i].Location.X, bottomCtrlOrigYs[i] + delta);
+            }
+
+            int normalHeight = setupButton.Location.Y + setupButton.Height + 45;
+            if (wsjtxClient != null && wsjtxClient.debug)
+            {
+                int debugBottom = label17.Location.Y + label17.Height + 10;
+                Height = Math.Max(normalHeight, debugBottom + (Height - ClientSize.Height));
             }
             else
             {
-                //move the movable controls to new location
-                for (int i = 0; i < movableCtrls.Length; i++)
-                {
-                    movableCtrls[i].Location = new Point(movableCtrls[i].Location.X, movableCtrls[i].Location.Y + offset);
-                }
+                Height = normalHeight;
             }
-
-            foreach (Control control in hideCtrls)
-            {
-                control.Visible = showOptions;
-            }
-
-            Height = (wsjtxClient.debug && showOptions ? this.MaximumSize.Height : setupButton.Location.Y + setupButton.Height + 45);
         }
 
         public string[] CallDirCqEntries()
@@ -1748,7 +1789,7 @@ namespace WSJTX_Controller
         {
             if (!formLoaded) return;
 
-            exceptTextBox.ForeColor = Color.Black;
+            exceptTextBox.ForeColor = DarkMode.Foreground;
             if (exceptTextBox.Text == separateBySpaces)
             {
                 exceptTextBox.Text = "";
@@ -1759,7 +1800,7 @@ namespace WSJTX_Controller
         {
             if (!formLoaded) return;
 
-            exceptTextBox.ForeColor = Color.Black;
+            exceptTextBox.ForeColor = DarkMode.Foreground;
 
             StringBuilder sb = new StringBuilder();
             string sep = "";
@@ -1777,8 +1818,13 @@ namespace WSJTX_Controller
             if (exceptTextBox.Text == "")
             {
                 exceptTextBox.Text = separateBySpaces;
-                exceptTextBox.ForeColor = Color.Gray;
+                exceptTextBox.ForeColor = DarkMode.GrayText;
             }
+        }
+
+        public bool IsBasicOnly()
+        {
+            return fileVer == basicOnlyFileVer;
         }
     }
 }
