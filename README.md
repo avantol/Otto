@@ -1,19 +1,14 @@
-# Otto (for FT8 and FT2 on WSJT-X)
+# Otto (add-on assistant for WSJT-X and Decodium "Raptor")
 <br>Otto is your assistant for WSJT-X (the extremely popular amateur radio weak-signal digital modes program).
 <br>Click here > <b>https://github.com/avantol/Otto/releases/latest</b> for download and installation instructions. 
-<br><br>The information below applies only to Otto for FT8 (FT2 information at <b>https://github.com/avantol/Otto/releases/latest</b>).
 <br><br><b><i>Use all appropriate caution since transmit can start at any time once you select "Enable Tx" in WSJT-X!!! Whenever the "Enable Tx" button is red, your antenna can be energized.</i></b>
-<br><br>At first run, basic mode:
-<br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/ctrlv2_Init.JPG">
-<br><br>Later, the advanced mode, which features the "Quick-start Setup":
-<br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/Guide.JPG">
-<br>(Use this Quick-start Setup *any* time you want to change your operating mode... daily, hourly, whenever).
-<br><br>You can also view all the options:
-<br><img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/ctrlv2.JPG">
-<br><br>As a start, Otto stores up calls that are interesting to you that come in while you're working another call, then replies to each in turn.
+<br><br><a href="https://github.com/avantol/Otto/releases/latest">
+<img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/otto_ft2.JPG"></a>
+<br><br>Otto stores up calls that are interesting to you that come in while you're working another call, then replies to each in turn.
 <br><br>You can also do things like:
 <br>- call CQ, or listen for interesting stations (listening conserves bandwidth)
 <br>- reply exclusively and repeatedly to calls from "rare DX" stations and expeditions
+<br>- work around Decodium Raptor's logging to Logbook of the World until "FT2" is accepted there
 <br>- call "CQ DX" and ignore non-DX replies
 <br>- reply automatically to "CQ DX" from stations that are actually DX to you
 <br>- reply automatically to local or DX stations you haven't worked yet
@@ -34,11 +29,11 @@
 <br><br>Click here for the full feature list for all WM8Q projects -> https://docs.google.com/spreadsheets/d/e/2PACX-1vRYuHHO7EpAjSYfSCHZycaMdFZfYVkFyqPz9biFtmnS9uukw43fYYqEBZyhV0WtQyde50OqF96b1Ao_/pubhtml?gid=0&single=true
 <br>The feature list also contains download links for all projects.
 <br><br>Tips:
-<br><br>Otto and the modified WSJT-X program run as a "versioned" pair, and Otto checks for the correct WSJT-X version when it starts. Be sure to download and install both programs!
-<br><br>If you already have another WSJT-X version installed: You can install the required (modified) WSJT-X (v3.0.0 RC1 or v2.7.0 GA) program in an alternate destination folder if you like. Neither WSJT-X version will interfere with the other, and they share the same settings and preferences... convenient!
-<br><br>When Otto is not running, the modified WSJT-X (3.0.0 RC1 or 2.7.0 GA) "forgets" its modifications and runs like the standard unmodified version. 
+<br><br>Otto and a modified WSJT-X program (or Decodium "Raptor") run as a "versioned" pair, and Otto checks for the correct WSJT-X/Raptor version when it starts. If you're not using Raptor, be sure to download the Modified WSJT-X at the <a href="https://github.com/avantol/Otto/releases/latest">"Releases" page</a>!
+<br><br>If you already have another WSJT-X version installed: You can install the required (modified) WSJT-X (v3.0.0 RC1 or v2.7.0 GA or Decodium "Raptor") program in an alternate destination folder if you like. Neither WSJT-X version will interfere with the other, and they share the same settings and preferences... convenient!
+<br><br>When Otto is not running, the modified WSJT-X (3.0.0 RC1 or 2.7.0 GA or "Raptor") "forgets" its modifications and runs like the standard unmodified version. 
 <br><br>The UDP address/port for the WSJT-X "UDP Server" is detected automatically by Otto.
-<br><br>For best results inter-operating with other WSJT-X helper programs, set the WSJT-X "UDP Server" (Settings | Reporting tab) to address 239.255.0.0 and port 2237, with all "Outgoing interfaces" selected.
+<br><br>For best results inter-operating with other WSJT-X helper programs (JTalert, GridTracker, etc.), set the WSJT-X "UDP Server" (Settings | Reporting tab) to address 239.255.0.0 and port 2237, with all "Outgoing interfaces" selected.
 <br><br>If you experience any problems with Otto, close all other programs that interface with WSJT-X, then re-open each one at a time to determine which one causes the problem.
 <br><br>It's best to use JTAlert in a passive mode, where it does not forward log data or control WSJT-X. This has caused problems for several users. 
 <br><br>HRD is reported to not inter-operate well with Otto, when JTAlert is used to forward log data to HRD.
