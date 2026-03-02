@@ -1910,7 +1910,6 @@ namespace WSJTX_Controller
             if (e != (period == Periods.EVEN))
             {
                 //marker4
-                LogBeep();
                 if (!headingPrinted)
                 {
                     DebugOutput($"{Time()}");
@@ -1918,7 +1917,6 @@ namespace WSJTX_Controller
                     headingPrinted = true;
                 }
                 DebugOutput($"{spacer}ProcessDecodeMsg(4) timing? call even:{e} period:{period}");
-                FixTime(ref dmsg, periodIdx);           //assume period from current time
             }
 
             latestDecodeTime = dmsg.SinceMidnight;
@@ -3057,7 +3055,7 @@ namespace WSJTX_Controller
             commConfirmed = false;
             mode = "";
             //pgmVariant = "";
-            //pgmFriendlyName = "FT8/FT2 program";
+            pgmFriendlyName = "FT8/FT2 program";
             UpdateRR73();
             ShowStatus();
             UpdateDebug();
@@ -6739,16 +6737,6 @@ namespace WSJTX_Controller
             failReason = "";
             basicOnlyTimer.Stop();
             if (ctrl.IsBasicOnly()) basicOnlyTimer.Start();
-        }
-
-        private void FixTime(ref EnqueueDecodeMessage d, int pIdx)
-        {
-            //marker2
-            if (mode != "FT2" || pIdx < 0 || pIdx >= ft2StdTimes.Count) return;
-            DebugOutput($"{spacer}before, pIdx:{pIdx} d:{d}");
-
-            d.SinceMidnight = new TimeSpan(0, 0, (int)((int)(d.SinceMidnight.TotalSeconds / 60) * 60 + ft2StdTimes[pIdx]));
-            DebugOutput($"{spacer}after, d:{d}");
         }
     }
 }
