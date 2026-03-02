@@ -144,7 +144,7 @@
             this.periodLabel = new System.Windows.Forms.Label();
             this.PeriodHelpLabel = new System.Windows.Forms.Label();
             this.PriorityHelpLabel = new System.Windows.Forms.Label();
-            this.guideLabel = new System.Windows.Forms.Label();
+            this.guideLabel = new System.Windows.Forms.Button();
             this.blockHelpLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.timeoutNumUpDown)).BeginInit();
             this.modeGroupBox.SuspendLayout();
@@ -1497,14 +1497,13 @@
             // 
             // guideLabel
             // 
-            this.guideLabel.AutoSize = true;
-            this.guideLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.guideLabel.ForeColor = System.Drawing.Color.Blue;
-            this.guideLabel.Location = new System.Drawing.Point(171, 548);
+            this.guideLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.guideLabel.Location = new System.Drawing.Point(120, 673);
             this.guideLabel.Name = "guideLabel";
-            this.guideLabel.Size = new System.Drawing.Size(115, 15);
+            this.guideLabel.Size = new System.Drawing.Size(105, 25);
             this.guideLabel.TabIndex = 105;
-            this.guideLabel.Text = "Quick-start setup";
+            this.guideLabel.Text = "Quick setup";
+            this.guideLabel.UseVisualStyleBackColor = true;
             this.guideLabel.Click += new System.EventHandler(this.guideLabel_Click);
             // 
             // blockHelpLabel
@@ -1779,7 +1778,7 @@
         public System.Windows.Forms.Label periodLabel;
         public System.Windows.Forms.Label PeriodHelpLabel;
         public System.Windows.Forms.Label PriorityHelpLabel;
-        private System.Windows.Forms.Label guideLabel;
+        private System.Windows.Forms.Button guideLabel;
         public System.Windows.Forms.Label blockHelpLabel;
     }
 }

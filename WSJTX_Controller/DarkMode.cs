@@ -19,20 +19,24 @@ namespace WSJTX_Controller
         // Track which controls have persistent HandleCreated listeners for border reattachment
         private static HashSet<Control> persistentBorderControls = new HashSet<Control>();
 
+        // Track which controls have EnabledChanged handlers for disabled-state painting
+        private static HashSet<Control> disabledPaintControls = new HashSet<Control>();
+
         // Dark mode palette
-        public static readonly Color DarkBackground = Color.FromArgb(30, 30, 30);
+        public static readonly Color DarkBackground = Color.FromArgb(10, 14, 24);
         public static readonly Color DarkControlBackground = Color.FromArgb(45, 45, 48);
         public static readonly Color DarkFieldBackground = Color.FromArgb(51, 51, 55);
-        public static readonly Color DarkForeground = Color.FromArgb(220, 220, 220);
+        public static readonly Color DarkForeground = Color.FromArgb(0, 224, 240);
         public static readonly Color DarkBorder = Color.FromArgb(67, 67, 70);
-        public static readonly Color DarkHelpLinkColor = Color.FromArgb(100, 180, 255);
+        public static readonly Color DarkHelpLinkColor = Color.FromArgb(220, 220, 0);
         public static readonly Color DarkVersionLinkColor = Color.FromArgb(100, 180, 255);
         public static readonly Color DarkGrayText = Color.FromArgb(140, 140, 140);
         public static readonly Color DarkGroupBoxFore = Color.FromArgb(200, 200, 200);
         public static readonly Color DarkButtonBackground = Color.FromArgb(60, 60, 64);
         public static readonly Color DarkButtonForeground = Color.FromArgb(220, 220, 220);
         public static readonly Color DarkListBoxBackground = Color.FromArgb(37, 37, 38);
-        public static readonly Color DarkControlBorder = Color.FromArgb(80, 80, 80);
+        public static readonly Color DarkControlBorder = Color.FromArgb(21, 32, 48);
+        public static readonly Color DarkDisabledForeground = Color.FromArgb(23, 154, 224);
 
         // Light mode palette (defaults)
         public static readonly Color LightBackground = SystemColors.Control;
@@ -407,11 +411,13 @@ namespace WSJTX_Controller
                     chk.ForeColor = Foreground;
                 }
                 chk.BackColor = FormBackground;
+                AttachDisabledPaint(chk, CheckBox_DisabledPaint, CheckBox_EnabledChanged);
             }
             else if (ctrl is RadioButton rb)
             {
                 rb.ForeColor = Foreground;
                 rb.BackColor = FormBackground;
+                AttachDisabledPaint(rb, RadioButton_DisabledPaint, RadioButton_EnabledChanged);
             }
             else if (ctrl is Label lbl)
             {
@@ -449,6 +455,7 @@ namespace WSJTX_Controller
                 {
                     lbl.BackColor = FormBackground;
                 }
+                AttachDisabledPaint(lbl, Label_DisabledPaint, Label_EnabledChanged);
             }
             else if (ctrl is Panel pnl)
             {
@@ -464,6 +471,99 @@ namespace WSJTX_Controller
                     ApplyToControls(ctrl.Controls);
                 }
             }
+        }
+        // --- Disabled-state custom painting (dark mode only) ---
+
+        private static void AttachDisabledPaint(Control ctrl, PaintEventHandler paintHandler, EventHandler enabledHandler)
+        {
+            if (!disabledPaintControls.Contains(ctrl))
+            {
+                disabledPaintControls.Add(ctrl);
+                ctrl.EnabledChanged += enabledHandler;
+            }
+            // Attach/detach Paint handler based on current state
+            ctrl.Paint -= paintHandler;
+            if (!ctrl.Enabled && Enabled)
+                ctrl.Paint += paintHandler;
+        }
+
+        private static void CheckBox_EnabledChanged(object sender, EventArgs e)
+        {
+            CheckBox chk = (CheckBox)sender;
+            chk.Paint -= CheckBox_DisabledPaint;
+            if (!chk.Enabled && Enabled)
+                chk.Paint += CheckBox_DisabledPaint;
+            chk.Invalidate();
+        }
+
+        private static void RadioButton_EnabledChanged(object sender, EventArgs e)
+        {
+            RadioButton rb = (RadioButton)sender;
+            rb.Paint -= RadioButton_DisabledPaint;
+            if (!rb.Enabled && Enabled)
+                rb.Paint += RadioButton_DisabledPaint;
+            rb.Invalidate();
+        }
+
+        private static void Label_EnabledChanged(object sender, EventArgs e)
+        {
+            Label lbl = (Label)sender;
+            lbl.Paint -= Label_DisabledPaint;
+            if (!lbl.Enabled && Enabled)
+                lbl.Paint += Label_DisabledPaint;
+            lbl.Invalidate();
+        }
+
+        private static void CheckBox_DisabledPaint(object sender, PaintEventArgs e)
+        {
+            CheckBox chk = (CheckBox)sender;
+            Size glyphSize = CheckBoxRenderer.GetGlyphSize(e.Graphics,
+                System.Windows.Forms.VisualStyles.CheckBoxState.UncheckedNormal);
+            int textX = chk.Padding.Left + glyphSize.Width + 3;
+            Rectangle textRect = new Rectangle(textX, 0, chk.Width - textX, chk.Height);
+
+            using (var brush = new SolidBrush(chk.BackColor))
+                e.Graphics.FillRectangle(brush, textRect);
+
+            TextRenderer.DrawText(e.Graphics, chk.Text, chk.Font,
+                textRect, DarkDisabledForeground,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
+        }
+
+        private static void RadioButton_DisabledPaint(object sender, PaintEventArgs e)
+        {
+            RadioButton rb = (RadioButton)sender;
+            Size glyphSize = RadioButtonRenderer.GetGlyphSize(e.Graphics,
+                System.Windows.Forms.VisualStyles.RadioButtonState.UncheckedNormal);
+            int textX = rb.Padding.Left + glyphSize.Width + 3;
+            Rectangle textRect = new Rectangle(textX, 0, rb.Width - textX, rb.Height);
+
+            using (var brush = new SolidBrush(rb.BackColor))
+                e.Graphics.FillRectangle(brush, textRect);
+
+            TextRenderer.DrawText(e.Graphics, rb.Text, rb.Font,
+                textRect, DarkDisabledForeground,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
+        }
+
+        private static void Label_DisabledPaint(object sender, PaintEventArgs e)
+        {
+            Label lbl = (Label)sender;
+            e.Graphics.Clear(lbl.BackColor);
+            TextFormatFlags flags = TextFormatFlags.Left | TextFormatFlags.VerticalCenter;
+            switch (lbl.TextAlign)
+            {
+                case ContentAlignment.TopLeft: flags = TextFormatFlags.Top | TextFormatFlags.Left; break;
+                case ContentAlignment.TopCenter: flags = TextFormatFlags.Top | TextFormatFlags.HorizontalCenter; break;
+                case ContentAlignment.TopRight: flags = TextFormatFlags.Top | TextFormatFlags.Right; break;
+                case ContentAlignment.MiddleCenter: flags = TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter; break;
+                case ContentAlignment.MiddleRight: flags = TextFormatFlags.VerticalCenter | TextFormatFlags.Right; break;
+                case ContentAlignment.BottomLeft: flags = TextFormatFlags.Bottom | TextFormatFlags.Left; break;
+                case ContentAlignment.BottomCenter: flags = TextFormatFlags.Bottom | TextFormatFlags.HorizontalCenter; break;
+                case ContentAlignment.BottomRight: flags = TextFormatFlags.Bottom | TextFormatFlags.Right; break;
+            }
+            TextRenderer.DrawText(e.Graphics, lbl.Text, lbl.Font,
+                lbl.ClientRectangle, DarkDisabledForeground, flags);
         }
     }
 }

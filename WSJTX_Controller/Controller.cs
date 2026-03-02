@@ -22,10 +22,6 @@ namespace WSJTX_Controller
 {
     public partial class Controller : Form
     {
-        private const int WM_SETREDRAW = 0x000B;
-        [DllImport("user32.dll")]
-        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
-
         public WsjtxClient wsjtxClient;
         public Guide guide;
         public bool alwaysOnTop = false;
@@ -119,6 +115,7 @@ namespace WSJTX_Controller
             {
                 sectionHeaderOrigYs[i] = sectionHeaders[i].Location.Y;
                 sectionHeaders[i].Cursor = Cursors.Hand;
+                sectionHeaders[i].ForeColor = Color.Blue;
             }
             callingLabel.Text = "\u25b2 Calling options";
             replyingLabel.Text = "\u25b2 Replying options";
@@ -651,7 +648,6 @@ namespace WSJTX_Controller
 
         private void UpdateDebug()
         {
-            SuspendLayout();
             FormBorderStyle = FormBorderStyle.FixedSingle;
             label2.Visible = wsjtxClient.debug;
             label5.Visible = wsjtxClient.debug;
@@ -675,7 +671,6 @@ namespace WSJTX_Controller
                 ShowWindow(GetConsoleWindow(), 0);
 #endif
             }
-            ResumeLayout();
         }
 
         private void UpdateAdvancedCtrls()
@@ -1676,17 +1671,12 @@ namespace WSJTX_Controller
 
         private void ToggleSection()
         {
-            SendMessage(Handle, WM_SETREDRAW, IntPtr.Zero, IntPtr.Zero);
-            SuspendLayout();
             RecalculateLayout();
-            ResumeLayout();
-            SendMessage(Handle, WM_SETREDRAW, (IntPtr)1, IntPtr.Zero);
-            Invalidate(true);
-            Update();
         }
 
         private void RecalculateLayout()
         {
+            SuspendLayout();
             bool[] expanded = { callingExpanded, replyingExpanded, sequenceExpanded, generalExpanded };
             string[] expandedText = { "\u25b2 Calling options", "\u25b2 Replying options", "\u25b2 Sequence options", "\u25b2 General options" };
             string[] collapsedText = { "\u25bc Calling options", "\u25bc Replying options", "\u25bc Sequence options", "\u25bc General options" };
@@ -1740,6 +1730,7 @@ namespace WSJTX_Controller
             {
                 Height = normalHeight;
             }
+            ResumeLayout(true);
         }
 
         public string[] CallDirCqEntries()

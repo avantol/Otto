@@ -311,6 +311,7 @@ namespace WsjtxUdpLib.Messages.Out
         public int Azimuth { get; set; }
         public int Rank { get; set; }
         public int SequenceNumber { get; set; }
+        //public int Msec { get; set; }
 
         public static string WsjtxCountry(string country)
         {

@@ -650,7 +650,8 @@ namespace WsjtxUdpLib.Messages.Out
 
         protected static TimeSpan DecodeQTime(byte[] message, ref int cur)
         {
-            return TimeSpan.FromMilliseconds(DecodeQUInt32(message, ref cur));
+            UInt32 ms = DecodeQUInt32(message, ref cur);
+            return TimeSpan.FromMilliseconds(ms);
         }
 
         protected static string DecodeString(byte[] message, ref int cur)
