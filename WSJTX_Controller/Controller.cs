@@ -1144,7 +1144,7 @@ namespace WSJTX_Controller
                 $"{nl}{nl}If the call sign is in the 'Calls waiting reply' list:" +
                 $"{nl}- Hold the 'Ctrl' key down and click on the call sign." +
                 $"{nl}{nl}Otherwise," +
-                $"{nl}- Enter the call sign in the 'Block any reply' box, with each call sign separated by a space." +
+                $"{nl}- Enter the call sign (or a country prefix) in the 'Block any reply' box, with each call sign (or prefix) separated by a space." +
                 $"{nl}{nl}Note: If you manually select a blocked call, it will be unblocked to allow replies.");
         }
 

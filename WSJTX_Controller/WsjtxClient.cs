@@ -6708,7 +6708,11 @@ namespace WSJTX_Controller
 
         private bool IsBlocked(string call)
         {
-            return blockList.Contains(call);
+            foreach (string c in blockList)
+            {
+                if (call.StartsWith(c)) return true;
+            }
+            return false;
         }
 
         private int MaxTimeoutsForMsg(bool isWantedNewCountryOnBand, bool isPota)
