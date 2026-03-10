@@ -40,8 +40,8 @@ namespace WSJTX_Controller
 
         private string nl = Environment.NewLine;
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "2.7.0/205", "3.0.0-rc1/100", "3.0.0-rc1/101", "3.0.0-rc1/102", "3.0.0-rc1/103", "3.0.0/IU8LMC" };
-        private List<string> supportedModes = new List<string>() { "FT8", "FT4", "FT2", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "2.7.0/205", "3.0.0-rc1/100", "3.0.0-rc1/101", "3.0.0-rc1/102", "3.0.0-rc1/103" };
+        private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevTo = 2;
         public int maxPrevPotaTo = 4;
@@ -170,7 +170,7 @@ namespace WSJTX_Controller
         private int holdTxRepeat = 0;
         private string curVerBld = null;
         private string pgmVariant = "WSJT-X";           //exact name of .ini file
-        private string pgmFriendlyName = "FT8/FT2 program"; //as shown to user
+        private string pgmFriendlyName = "WSJT-X";      //as shown to user
         private bool txWarningSound = false;
         private bool timedStartInProgress = false;
         private int consecCqCount = 0;
@@ -1130,22 +1130,7 @@ namespace WSJTX_Controller
                 DebugOutput($"{Time()}{nl}{imsg}");
                 string rev = imsg.Revision.Split(' ')[0];       //may contain other info, including URL
                 int.TryParse(rev, out wsjtxRevision);
-                if (imsg.Revision.Contains("IU8LMC")) rev = "IU8LMC";
                 curVerBld = $"{imsg.Version}/{rev}";
-
-                if (imsg.Revision.Contains("IU8LMC"))
-                {
-
-                    pgmVariant = "Decodium";
-                    pgmFriendlyName = "Raptor";
-                }
-                else
-                {
-                    pgmVariant = "WSJT-X";
-                    pgmFriendlyName = pgmVariant;
-
-                }
-                ShowStatus();       //update with actual program
 
                 if (!acceptableWsjtxVersions.Contains(curVerBld))
                 {
@@ -1892,8 +1877,8 @@ namespace WSJTX_Controller
 
             bool headingPrinted = false;
 
-            //fix error in std WSJT-X and Decodium where latest call in log has invalid "worked before" status
-            if (pgmVariant == "Decodium" && logList.Contains(deCall))
+            //fix error in std WSJT-X where latest call in log has invalid "worked before" status
+            if (logList.Contains(deCall))
             {
                 if (!headingPrinted)
                 {
@@ -1903,20 +1888,6 @@ namespace WSJTX_Controller
                 }
                 DebugOutput($"{spacer}ProcessDecodeMsg(5) worked before? was IsNewCallOnBand:{dmsg.IsNewCallOnBand} IsNewCallAnyBand:{dmsg.IsNewCallAnyBand}");
                 dmsg.IsNewCallOnBand = dmsg.IsNewCallAnyBand = false;
-            }
-
-            //check for error in decode start time (Decodium bug)
-            bool e = IsEvenCall(dmsg);
-            if (e != (period == Periods.EVEN))
-            {
-                //marker4
-                if (!headingPrinted)
-                {
-                    DebugOutput($"{Time()}");
-                    DebugOutput($"{dmsg}{nl}{spacer}msg:'{dmsg.Message}'");
-                    headingPrinted = true;
-                }
-                DebugOutput($"{spacer}ProcessDecodeMsg(4) timing? call even:{e} period:{period}");
             }
 
             latestDecodeTime = dmsg.SinceMidnight;
@@ -3054,8 +3025,6 @@ namespace WSJTX_Controller
             cmdCheck = RandomCheckString();
             commConfirmed = false;
             mode = "";
-            //pgmVariant = "";
-            pgmFriendlyName = "FT8/FT2 program";
             UpdateRR73();
             ShowStatus();
             UpdateDebug();
@@ -3774,8 +3743,7 @@ namespace WSJTX_Controller
                                 }
                                 else
                                 {
-                                    string dis = (pgmVariant == "Decodium") ? ", disable Auto CQ" : "";
-                                    status = $"{failReason}Select 'Enable Tx'{dis} in {pgmFriendlyName}";
+                                    status = $"{failReason}Select 'Enable Tx' in {pgmFriendlyName}";
                                     foreColor = Color.White;
                                     backColor = Color.Green;
                                 }
@@ -6037,7 +6005,7 @@ namespace WSJTX_Controller
         //return success or failure
         private bool DetectUdpSettings(out IPAddress ipa, out int prt, out bool mul)
         {
-            //use WSJT-X.ini or Decodium.ini file for settings
+            //use WSJT-X.ini file for settings
             string pathWsjtx = $"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\{pgmVariant}";
             string pathFileNameExtWsjtx = pathWsjtx + "\\" + pgmVariant + ".ini";
             ipa = null;
@@ -6073,14 +6041,10 @@ namespace WSJTX_Controller
 
         private bool IsWsjtxRunning()
         {
-            string file = "WSJT-X.lock";                //does not necessarily indicate WSJT-X, some builds of Decodium use this
+            string file = "WSJT-X.lock";
             string pathFileNameExt = $"{Path.GetTempPath()}{file}";
             //string linuxPathFileNameExt = "Z:\\tmp\\WSJT-X.lock";     //wine/linux testing
-            if (File.Exists(pathFileNameExt)) return true; /*|| File.Exists(linuxPathFileNameExt)*/;     //wine/linux testing
-            
-            file = "Decodium.lock";
-            pathFileNameExt = $"{Path.GetTempPath()}{file}";
-            return File.Exists(pathFileNameExt);
+            return (File.Exists(pathFileNameExt)); /*|| File.Exists(linuxPathFileNameExt)*/;     //wine/linux testing
         }
 
         //must call only when in WAIT state
