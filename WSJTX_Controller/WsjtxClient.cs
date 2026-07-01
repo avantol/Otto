@@ -40,7 +40,7 @@ namespace WSJTX_Controller
 
         private string nl = Environment.NewLine;
 
-        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "2.7.0/205", "3.0.0-rc1/100", "3.0.0-rc1/101", "3.0.0-rc1/102", "3.0.0-rc1/103" };
+        private List<string> acceptableWsjtxVersions = new List<string> { "2.7.0/185", "2.7.0/200", "2.7.0/202", "2.7.0/203", "2.7.0/204", "2.7.0/205", "3.0.0-rc1/100", "3.0.0-rc1/101", "3.0.0-rc1/102", "3.0.0-rc1/103", "3.0.0-rc1/104", "3.0.0-rc1/105", "3.0.0/106", "3.0.0/107" };
         private List<string> supportedModes = new List<string>() { "FT8", "FT4", "JT65", "JT9", "FST4", "MSK144", "Q65" };    //6/7/22
 
         public int maxPrevTo = 2;
@@ -2051,7 +2051,7 @@ namespace WSJTX_Controller
                 }
 
                 //decode processing of calls to myCall
-                if (/*txEnabled &&*/ deCall != null)            //tempOnly
+                if (deCall != null)
                 {
                     DebugOutput($"{spacer}'{deCall}' is to {myCall}");
                     if ((deCall == callInProg || (txTimeout && deCall == tCall)) && recdPrevSignoff)        //cancel call in progress
@@ -2951,6 +2951,12 @@ namespace WSJTX_Controller
                 return res;
             }
 
+            if (trPeriod == 60000)      //period = 1 minute
+            {
+                int min = (int)((msecPastMidnight + offset) / 1000) / 60;       //minutes past the hour
+                return min % 2 == 0;
+            }
+
             int sec = (int)((msecPastMidnight + offset)/1000) % 60;       //seconds past the minute
 
             if (mode == "FT4")          //irregular
@@ -2959,7 +2965,6 @@ namespace WSJTX_Controller
             }
 
             return (sec / (trPeriod / 1000)) % 2 == 0;
-
         }
 
         private bool IsEvenCall(EnqueueDecodeMessage d)
@@ -6460,7 +6465,7 @@ namespace WSJTX_Controller
                                                 //"dtNow" will be shortly before the tx period following the decode period, at least once per cycle;
                                                 //add 1 seconds to dtNow to assure that decision to reply is based on the tx period's time
             int idx;
-            if (txMode == TxModes.LISTEN) evenPeriod = IsEvenPeriod((dtNow.Minute * 60 * 1000) + ((dtNow.Second) * 1000) + dtNow.Millisecond + 1000, 0, out idx);       //listen mode can xmit on either period depending on current time
+            if (txMode == TxModes.LISTEN) evenPeriod = IsEvenPeriod((dtNow.Minute * 60 * 1000) + ((dtNow.Second) * 1000) + dtNow.Millisecond + 1000, 2000, out idx);       //listen mode can xmit on either period depending on current time
             if (!dmsg.UseStdReply) res = evenCall != evenPeriod;      //reply is in opposite time period from msg
             DebugOutput($"{spacer}IsCorrectTimePeriod:{res} evenCall:{evenCall} evenPeriod:{evenPeriod} UseStdReply:{dmsg.UseStdReply}");
             return res;
