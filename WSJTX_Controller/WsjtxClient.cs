@@ -52,6 +52,9 @@ namespace WSJTX_Controller
         public bool suspendComm = false;
         public string myCall = null, myGrid = null, myContinent = null;
         public int rankMethodIdx = 0;
+        public string CurrentMode { get { return mode; } }
+        public string CurrentBand { get { return FreqToBand(dialFrequency / 1e6); } }
+        public bool MetricUnits { get { return metricUnits; } }
 
         private StreamWriter logSw = null;
         private StreamWriter potaSw = null;
@@ -1286,16 +1289,25 @@ namespace WSJTX_Controller
                     UpdateDblClkTip();
 
                     mode = smsg.Mode;
-                    if (lastMode == null) lastMode = mode;
+                    if (lastMode == null)
+                    {
+                        lastMode = mode;
+                        if (ctrl.pskReporterClient != null) ctrl.pskReporterClient.UpdateMode(mode);
+                    }
                     if (mode != lastMode)
                     {
                         DebugOutput($"{spacer}mode changed, decodeCycle:{CurrentDecodeCycleString()} lastDecoding:{lastDecoding}");
                         ClearAudioOffsets();
+                        if (ctrl.pskReporterClient != null) ctrl.pskReporterClient.UpdateMode(mode);
                     }
                     lastMode = mode;
 
                     dialFrequency = smsg.DialFrequency;
-                    if (lastDialFrequency == null) lastDialFrequency = dialFrequency;
+                    if (lastDialFrequency == null)
+                    {
+                        lastDialFrequency = dialFrequency;
+                        if (ctrl.spotsMapForm != null) ctrl.spotsMapForm.OnBandChanged(FreqToBand(dialFrequency / 1e6));
+                    }
                     if (lastDialFrequency != null && (Math.Abs((float)lastDialFrequency - (float)dialFrequency) > freqChangeThreshold))
                     {
                         DebugOutput($"{spacer}frequency changed, decodeCycle:{CurrentDecodeCycleString()} lastDecoding:{lastDecoding}");
@@ -1504,6 +1516,8 @@ namespace WSJTX_Controller
                             DebugOutput($"{nl}{Time()} WSJT-X event, Call or grid changed, myCall:{smsg.DeCall} (was {myCall}) myGrid:{smsg.DeGrid} (was {myGrid})");
                             myCall = smsg.DeCall;
                             myGrid = smsg.DeGrid;
+
+                            if (ctrl.pskReporterClient != null) ctrl.pskReporterClient.UpdateCallsign(myCall);
 
                             ResetOpMode();
                             txTimeout = true;       //cancel current calling
@@ -1784,9 +1798,12 @@ namespace WSJTX_Controller
                         {
                             if (opMode > OpModes.IDLE) ClearAudioOffsets();
 
+                            string newBand = FreqToBand(dialFrequency / 1e6);
+                            if (ctrl.spotsMapForm != null) ctrl.spotsMapForm.OnBandChanged(newBand);
+
                             if (opMode == OpModes.ACTIVE)
                             {
-                                DebugOutput($"{spacer}band changed:{FreqToBand(dialFrequency / 1e6)} (was:{FreqToBand(lastDialFrequency / 1e6)})");
+                                DebugOutput($"{spacer}band changed:{newBand} (was:{FreqToBand(lastDialFrequency / 1e6)})");
                                 ResetOpMode();
                                 ClearCalls(true);
                                 logList.Clear();        //can re-log on new mode/band or in new session
@@ -2230,6 +2247,8 @@ namespace WSJTX_Controller
                 myCall = smsg.DeCall;
                 myGrid = smsg.DeGrid;
                 DebugOutput($"{spacer}CheckMyCall myCall:{myCall} myGrid:{myGrid}");
+
+                if (ctrl.pskReporterClient != null) ctrl.pskReporterClient.UpdateCallsign(myCall);
             }
 
             UpdateDebug();

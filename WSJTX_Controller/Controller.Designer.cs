@@ -144,8 +144,9 @@
             this.periodLabel = new System.Windows.Forms.Label();
             this.PeriodHelpLabel = new System.Windows.Forms.Label();
             this.PriorityHelpLabel = new System.Windows.Forms.Label();
-            this.guideLabel = new System.Windows.Forms.Button();
             this.blockHelpLabel = new System.Windows.Forms.Label();
+            this.spotsButton = new System.Windows.Forms.Button();
+            this.guideLabel = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.timeoutNumUpDown)).BeginInit();
             this.modeGroupBox.SuspendLayout();
             this.SuspendLayout();
@@ -195,7 +196,7 @@
             // verLabel
             // 
             this.verLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.verLabel.Location = new System.Drawing.Point(14, 672);
+            this.verLabel.Location = new System.Drawing.Point(13, 672);
             this.verLabel.Name = "verLabel";
             this.verLabel.Size = new System.Drawing.Size(113, 14);
             this.verLabel.TabIndex = 0;
@@ -336,7 +337,7 @@
             // 
             this.verLabel2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Underline, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.verLabel2.ForeColor = System.Drawing.Color.Blue;
-            this.verLabel2.Location = new System.Drawing.Point(15, 685);
+            this.verLabel2.Location = new System.Drawing.Point(13, 685);
             this.verLabel2.Name = "verLabel2";
             this.verLabel2.Size = new System.Drawing.Size(110, 14);
             this.verLabel2.TabIndex = 34;
@@ -401,9 +402,9 @@
             // setupButton
             // 
             this.setupButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.setupButton.Location = new System.Drawing.Point(229, 673);
+            this.setupButton.Location = new System.Drawing.Point(183, 673);
             this.setupButton.Name = "setupButton";
-            this.setupButton.Size = new System.Drawing.Size(56, 25);
+            this.setupButton.Size = new System.Drawing.Size(52, 25);
             this.setupButton.TabIndex = 35;
             this.setupButton.Text = "Config";
             this.setupButton.UseVisualStyleBackColor = true;
@@ -1495,17 +1496,6 @@
             this.PriorityHelpLabel.Visible = false;
             this.PriorityHelpLabel.Click += new System.EventHandler(this.PriorityHelpLabel_Click);
             // 
-            // guideLabel
-            // 
-            this.guideLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.guideLabel.Location = new System.Drawing.Point(120, 673);
-            this.guideLabel.Name = "guideLabel";
-            this.guideLabel.Size = new System.Drawing.Size(105, 25);
-            this.guideLabel.TabIndex = 105;
-            this.guideLabel.Text = "Quick setup";
-            this.guideLabel.UseVisualStyleBackColor = true;
-            this.guideLabel.Click += new System.EventHandler(this.guideLabel_Click);
-            // 
             // blockHelpLabel
             // 
             this.blockHelpLabel.AutoSize = true;
@@ -1520,15 +1510,38 @@
             this.blockHelpLabel.Visible = false;
             this.blockHelpLabel.Click += new System.EventHandler(this.blockHelpLabel_Click);
             // 
+            // spotsButton
+            // 
+            this.spotsButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.spotsButton.Location = new System.Drawing.Point(236, 673);
+            this.spotsButton.Name = "spotsButton";
+            this.spotsButton.Size = new System.Drawing.Size(51, 25);
+            this.spotsButton.TabIndex = 107;
+            this.spotsButton.Text = "Spots";
+            this.spotsButton.UseVisualStyleBackColor = true;
+            this.spotsButton.Click += new System.EventHandler(this.spotsButton_click);
+            // 
+            // guideLabel
+            // 
+            this.guideLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.guideLabel.Location = new System.Drawing.Point(100, 673);
+            this.guideLabel.Name = "guideLabel";
+            this.guideLabel.Size = new System.Drawing.Size(81, 25);
+            this.guideLabel.TabIndex = 105;
+            this.guideLabel.Text = "Quick setup";
+            this.guideLabel.UseVisualStyleBackColor = true;
+            this.guideLabel.Click += new System.EventHandler(this.guideLabel_Click);
+            // 
             // Controller
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.ClientSize = new System.Drawing.Size(301, 764);
+            this.Controls.Add(this.guideLabel);
+            this.Controls.Add(this.spotsButton);
             this.Controls.Add(this.blockHelpLabel);
             this.Controls.Add(this.replyNewOnlyCheckBox);
-            this.Controls.Add(this.guideLabel);
             this.Controls.Add(this.freqCheckBox);
             this.Controls.Add(this.LogEarlyHelpLabel);
             this.Controls.Add(this.AutoFreqHelpLabel);
@@ -1778,8 +1791,9 @@
         public System.Windows.Forms.Label periodLabel;
         public System.Windows.Forms.Label PeriodHelpLabel;
         public System.Windows.Forms.Label PriorityHelpLabel;
-        private System.Windows.Forms.Button guideLabel;
         public System.Windows.Forms.Label blockHelpLabel;
+        private System.Windows.Forms.Button spotsButton;
+        private System.Windows.Forms.Button guideLabel;
     }
 }
 

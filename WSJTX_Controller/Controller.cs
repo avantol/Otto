@@ -30,6 +30,9 @@ namespace WSJTX_Controller
         private bool formLoaded = false;
         private SetupDlg setupDlg = null;
         private HelpDlg helpDlg = null;
+        internal SpotsMapForm spotsMapForm = null;
+        internal PskReporterClient pskReporterClient = null;
+        internal SpotCache spotCache = null;
         private IniFile iniFile = null;
         private int minSkipCount = 1;
         private const int maxSkipCount = 20;
@@ -64,6 +67,7 @@ namespace WSJTX_Controller
         public System.Windows.Forms.Timer guideTimer;
         public System.Windows.Forms.Timer callListBoxClickTimer;
         public System.Windows.Forms.Timer helpTimer;
+        public System.Windows.Forms.Timer spotsMapTimer;
 
         private string nl = Environment.NewLine;
         //private static string alphanumericOnly = "[^0-9A-Za-z]";  //match if any non-alphanumeric
@@ -107,6 +111,9 @@ namespace WSJTX_Controller
             helpTimer = new System.Windows.Forms.Timer();
             helpTimer.Interval = 20;
             helpTimer.Tick += new System.EventHandler(helpTimer_Tick);
+            spotsMapTimer = new System.Windows.Forms.Timer();
+            spotsMapTimer.Interval = 20;
+            spotsMapTimer.Tick += new System.EventHandler(spotsMapTimer_Tick);
 
             // Section headers
             sectionHeaders = new Label[] { callingLabel, replyingLabel, sequenceLabel, optionsLabel };
@@ -168,7 +175,7 @@ namespace WSJTX_Controller
 
             // Bottom controls (always visible, repositioned dynamically)
             bottomCtrls = new Control[] {
-                setupButton, modeGroupBox, guideLabel, msgTextBox,
+                setupButton, spotsButton, modeGroupBox, guideLabel, msgTextBox,
                 statusText, verLabel, verLabel2, modeHelpLabel,
                 label1, label2, label3, label4, label5, label6, label7, label8, label9, label10,
                 label11, label12, label13, label14, label15, label16, label17, label18, label19, label20,
@@ -432,6 +439,12 @@ namespace WSJTX_Controller
                 DarkMode.Enabled = true;
                 DarkMode.ApplyToForm(this);
             }
+
+            // Auto-reopen spots map if it was visible when last closed
+            if (iniFile != null && iniFile.Read("spotsMapVisible") == "True")
+            {
+                spotsMapTimer.Start();
+            }
         }
 
         private void Controller_FormClosing(object sender, FormClosingEventArgs e)
@@ -490,11 +503,25 @@ namespace WSJTX_Controller
                 iniFile.Write("sequenceExpanded", sequenceExpanded.ToString());
                 iniFile.Write("generalExpanded", generalExpanded.ToString());
                 iniFile.Write("darkMode", darkMode.ToString());
+
+                // Spots map settings
+                if (spotsMapForm != null)
+                {
+                    iniFile.Write("spotsMapPosX", spotsMapForm.Location.X.ToString());
+                    iniFile.Write("spotsMapPosY", spotsMapForm.Location.Y.ToString());
+                    iniFile.Write("spotsMapWidth", spotsMapForm.Width.ToString());
+                    iniFile.Write("spotsMapHeight", spotsMapForm.Height.ToString());
+                    iniFile.Write("spotsMapShowRings", spotsMapForm.ShowRings.ToString());
+                    iniFile.Write("spotsMapShowCalls", spotsMapForm.ShowCalls.ToString());
+                }
+                iniFile.Write("spotsMapVisible", (spotsMapForm != null && spotsMapForm.Visible).ToString());
             }
 
             CloseComm();
             if (guide != null) guide.Close();
             if (helpDlg != null) helpDlg.Close();
+            if (spotsMapForm != null) spotsMapForm.ForceClose();
+            if (pskReporterClient != null) pskReporterClient.Dispose();
         }
 
         public void CloseComm()
@@ -1438,6 +1465,7 @@ namespace WSJTX_Controller
             if (guide != null) DarkMode.ApplyToForm(guide);
             if (setupDlg != null) DarkMode.ApplyToForm(setupDlg);
             if (helpDlg != null) DarkMode.ApplyToForm(helpDlg);
+            if (spotsMapForm != null) DarkMode.ApplyToForm(spotsMapForm);
             wsjtxClient.RefreshDisplay();
         }
 
@@ -1816,6 +1844,76 @@ namespace WSJTX_Controller
         public bool IsBasicOnly()
         {
             return fileVer == basicOnlyFileVer;
+        }
+
+        private void spotsButton_click(object sender, EventArgs e)
+        {
+            if (formLoaded) wsjtxClient.RestartAutoCqTimer();
+
+            if (spotsMapForm != null)
+            {
+                if (spotsMapForm.Visible)
+                {
+                    spotsMapForm.BringToFront();
+                }
+                else
+                {
+                    spotsMapForm.Show();
+                    spotsMapForm.BringToFront();
+                }
+                return;
+            }
+
+            spotsMapTimer.Start();
+        }
+
+        private void spotsMapTimer_Tick(object sender, EventArgs e)
+        {
+            spotsMapTimer.Stop();
+
+            // Lazy-init MQTT client and spot cache (persist across form open/close)
+            if (pskReporterClient == null)
+            {
+                spotCache = new SpotCache();
+                pskReporterClient = new PskReporterClient();
+                if (wsjtxClient != null && wsjtxClient.myCall != null) pskReporterClient.UpdateCallsign(wsjtxClient.myCall);
+                if (wsjtxClient != null) pskReporterClient.UpdateMode(wsjtxClient.CurrentMode);
+                pskReporterClient.Connect();
+            }
+
+            spotsMapForm = new SpotsMapForm(this, pskReporterClient, spotCache);
+            if (wsjtxClient != null)
+            {
+                if (wsjtxClient.myGrid != null) spotsMapForm.SetStation(wsjtxClient.myCall, wsjtxClient.myGrid);
+                spotsMapForm.SetBand(wsjtxClient.CurrentBand);
+            }
+            RestoreSpotsMapSettings();
+            if (DarkMode.Enabled) DarkMode.ApplyToForm(spotsMapForm);
+            spotsMapForm.Show();
+        }
+
+        public void SpotsMapHidden()
+        {
+            // Called when user closes the spots map window (hides it)
+        }
+
+        private void RestoreSpotsMapSettings()
+        {
+            if (iniFile == null || spotsMapForm == null) return;
+            int x, y, w, h;
+            if (int.TryParse(iniFile.Read("spotsMapPosX"), out x) &&
+                int.TryParse(iniFile.Read("spotsMapPosY"), out y))
+            {
+                spotsMapForm.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
+                spotsMapForm.Location = new System.Drawing.Point(x, y);
+            }
+            if (int.TryParse(iniFile.Read("spotsMapWidth"), out w) &&
+                int.TryParse(iniFile.Read("spotsMapHeight"), out h))
+            {
+                if (w >= 400 && h >= 400) spotsMapForm.Size = new System.Drawing.Size(w, h);
+            }
+            spotsMapForm.ShowRings = iniFile.Read("spotsMapShowRings") == "True";
+            spotsMapForm.ShowCalls = iniFile.Read("spotsMapShowCalls") == "True";
         }
     }
 }
