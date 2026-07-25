@@ -1,10 +1,11 @@
-# Otto (add-on assistant for WSJT-X and Decodium "Raptor")
+# Otto (add-on assistant for WSJT-X)
 <br>Otto is your assistant for WSJT-X (the extremely popular amateur radio weak-signal digital modes program).
 <br>Click here > <b>https://github.com/avantol/Otto/releases/latest</b> for download and installation instructions. 
 <br><br><b><i>Use all appropriate caution since transmit can start at any time once you select "Enable Tx" in WSJT-X!!! Whenever the "Enable Tx" button is red, your antenna can be energized.</i></b>
 <br><br><a href="https://github.com/avantol/Otto/releases/latest">
 <img src="https://github.com/avantol/WSJTX-Controller-v2/blob/main/otto_ft2.JPG"></a>
-<br><br>Otto stores up calls that are interesting to you that come in while you're working another call, then replies to each in turn.
+<br><br><img src="https://github.com/avantol/Otto/blob/main/spots_map_small.png"></a>
+<br>Otto stores up calls that are interesting to you that come in while you're working another call, then replies to each in turn.
 <br><br>You can also do things like:
 <br>- call CQ, or listen for interesting stations (listening conserves bandwidth)
 <br>- reply exclusively and repeatedly to calls from "rare DX" stations and expeditions
