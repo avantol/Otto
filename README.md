@@ -8,7 +8,7 @@
 <br><br>You can also do things like:
 <br>- call CQ, or listen for interesting stations (listening conserves bandwidth)
 <br>- reply exclusively and repeatedly to calls from "rare DX" stations and expeditions
-<br>- work around Decodium Raptor's logging to Logbook of the World until "FT2" is accepted there
+<br>- built-in Spots Map, upodates every few seconds (reliably, unlike PSK Reporter)
 <br>- call "CQ DX" and ignore non-DX replies
 <br>- reply automatically to "CQ DX" from stations that are actually DX to you
 <br>- reply automatically to local or DX stations you haven't worked yet
