@@ -30,9 +30,9 @@
 <br><br>Click here for the full feature list for all WM8Q projects -> https://docs.google.com/spreadsheets/d/e/2PACX-1vRYuHHO7EpAjSYfSCHZycaMdFZfYVkFyqPz9biFtmnS9uukw43fYYqEBZyhV0WtQyde50OqF96b1Ao_/pubhtml?gid=0&single=true
 <br>The feature list also contains download links for all projects.
 <br><br>Tips:
-<br><br>Otto and a modified WSJT-X program (or Decodium "Raptor") run as a "versioned" pair, and Otto checks for the correct WSJT-X/Raptor version when it starts. If you're not using Raptor, be sure to download the Modified WSJT-X at the <a href="https://github.com/avantol/Otto/releases/latest">"Releases" page</a>!
-<br><br>If you already have another WSJT-X version installed: You can install the required (modified) WSJT-X (v3.0.0 RC1 or v2.7.0 GA or Decodium "Raptor") program in an alternate destination folder if you like. Neither WSJT-X version will interfere with the other, and they share the same settings and preferences... convenient!
-<br><br>When Otto is not running, the modified WSJT-X (3.0.0 RC1 or 2.7.0 GA or "Raptor") "forgets" its modifications and runs like the standard unmodified version. 
+<br><br>Otto and a modified WSJT-X program run as a "versioned" pair, and Otto checks for the correct WSJT-X version when it starts. Be sure to download the Modified WSJT-X at the <a href="https://github.com/avantol/Otto/releases/latest">"Releases" page</a>!
+<br><br>If you already have another WSJT-X version installed: You can install the required (modified) WSJT-X (v3.0.0 RC1 or v2.7.0 GA program in an alternate destination folder if you like. Neither WSJT-X version will interfere with the other, and they share the same settings and preferences... convenient!
+<br><br>When Otto is not running, the modified WSJT-X (3.0.0 RC1 or 2.7.0 GA "forgets" its modifications and runs like the standard unmodified version. 
 <br><br>The UDP address/port for the WSJT-X "UDP Server" is detected automatically by Otto.
 <br><br>For best results inter-operating with other WSJT-X helper programs (JTalert, GridTracker, etc.), set the WSJT-X "UDP Server" (Settings | Reporting tab) to address 239.255.0.0 and port 2237, with all "Outgoing interfaces" selected.
 <br><br>If you experience any problems with Otto, close all other programs that interface with WSJT-X, then re-open each one at a time to determine which one causes the problem.
